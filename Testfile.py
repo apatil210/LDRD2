@@ -122,8 +122,30 @@ def build_bar_chart(df: pd.DataFrame):
             family="Arial, sans-serif",
             color=TEXT_COLOR,
             size=14
-        ))
-
+        ),
+        shapes=[
+            dict(
+                type="line",
+                x0=break_start + 0.35,
+                x1=break_start + 0.55,
+                y0=-0.5,
+                y1=len(chart_df) - 0.5,
+                xref="x",
+                yref="y",
+                line=dict(color="white", width=6)
+            ),
+            dict(
+                type="line",
+                x0=break_start + 0.65,
+                x1=break_start + 0.85,
+                y0=-0.5,
+                y1=len(chart_df) - 0.5,
+                xref="x",
+                yref="y",
+                line=dict(color="white", width=6)
+            )
+        ]
+    )
 
     fig.update_xaxes(
         range=[0, max_plot],
