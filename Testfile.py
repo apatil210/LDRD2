@@ -14,7 +14,6 @@ st.set_page_config(
 pio.templates.default = "plotly"
 
 DATA_URL = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20Data.xlsx"
-
 THRESHOLD_PCT = 1.0
 
 TEXT_COLOR = "#14212B"
@@ -35,20 +34,15 @@ TREEMAP_PALETTE = [
 ]
 
 @st.cache_data(show_spinner=False)
-def load_excel(uploaded_file=None, url: str | None = None) -> pd.DataFrame:
-    if uploaded_file is not None:
-        raw = pd.read_excel(uploaded_file, sheet_name="Process-level data", header=None)
-    else:
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        raw = pd.read_excel(BytesIO(response.content), sheet_name="Process-level data", header=None)
+def load_excel(url: str) -> pd.DataFrame:
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
 
-    # First row contains the real headers
-    raw.columns = raw.iloc[0]
-    df = raw.iloc[1:].reset_index(drop=True)
+    raw = pd.read_excel(BytesIO(response.content), sheet_name="Process-level data", header=None)
 
-    # Clean column names
-    df.columns = [str(c).strip() for c in df.columns]
+    raw.columns = raw.iloc[1]
+    df = raw.iloc[3:].reset_index(drop=True)
+    df.columns = [str(c).replace("\n", " ").strip() for c in df.columns]
 
     return df
 
@@ -184,7 +178,7 @@ def build_treemap(df: pd.DataFrame, label_col: str, value_col: str, title: str):
 st.title("Energy Classification Treemaps")
 
 try:
-    df = load_excel(uploaded_file=uploaded_file, url=None if uploaded_file else DATA_URL)
+    df = load_excel(DATA_URL)
 
     unit_ops = aggregate_percent(
         df,
@@ -206,8 +200,12 @@ try:
 
     st.subheader("Unit Operations by Percent Annual Energy Use")
     st.plotly_chart(
-        build_treemap(unit_ops_plot, "Unit operation (Level 1 classification)", "Annual energy demand in 2022",
-                      "Unit Operations"),
+        build_treemap(
+            unit_ops_plot,
+            "Unit operation (Level 1 classification)",
+            "Annual energy demand in 2022",
+            "Unit Operations"
+        ),
         use_container_width=True,
         theme=None,
         config={"displayModeBar": False, "scrollZoom": False}
@@ -215,8 +213,12 @@ try:
 
     st.subheader("Industry Types by Percent Annual Energy Use")
     st.plotly_chart(
-        build_treemap(industries_plot, "Industrial process", "Annual energy demand in 2022",
-                      "Industry Types"),
+        build_treemap(
+            industries_plot,
+            "Industrial process",
+            "Annual energy demand in 2022",
+            "Industry Types"
+        ),
         use_container_width=True,
         theme=None,
         config={"displayModeBar": False, "scrollZoom": False}
@@ -224,49 +226,16 @@ try:
 
     st.subheader("Energy Use Breakdown by Type")
     st.plotly_chart(
-        build_treemap(energy_mix_plot, "Category", "Value",
-                      "Electricity vs Fuel vs Steam"),
+        build_treemap(
+            energy_mix_plot,
+            "Category",
+            "Value",
+            "Electricity vs Fuel vs Steam"
+        ),
         use_container_width=True,
         theme=None,
         config={"displayModeBar": False, "scrollZoom": False}
     )
-
-    st.subheader("Underlying Tables")
-
-    tab1, tab2, tab3 = st.tabs(["Unit Operations", "Industry Types", "Energy Types"])
-
-    with tab1:
-        st.dataframe(
-            unit_ops.rename(columns={
-                "Unit operation (Level 1 classification)": "Unit Operation",
-                "Annual energy demand in 2022": "Annual Energy (PJ)",
-                "Share_pct": "Share (%)"
-            })[["Rank", "Unit Operation", "Annual Energy (PJ)", "Share (%)"]],
-            use_container_width=True,
-            hide_index=True
-        )
-
-    with tab2:
-        st.dataframe(
-            industries.rename(columns={
-                "Industrial process": "Industry Type",
-                "Annual energy demand in 2022": "Annual Energy (PJ)",
-                "Share_pct": "Share (%)"
-            })[["Rank", "Industry Type", "Annual Energy (PJ)", "Share (%)"]],
-            use_container_width=True,
-            hide_index=True
-        )
-
-    with tab3:
-        st.dataframe(
-            energy_mix.rename(columns={
-                "Category": "Energy Type",
-                "Value": "Annual Energy (PJ)",
-                "Share_pct": "Share (%)"
-            })[["Rank", "Energy Type", "Annual Energy (PJ)", "Share (%)"]],
-            use_container_width=True,
-            hide_index=True
-        )
 
 except Exception as e:
     st.error(f"App error: {e}")
