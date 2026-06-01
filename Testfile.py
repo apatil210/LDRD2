@@ -121,7 +121,7 @@ def build_bar_chart(df: pd.DataFrame):
         # This only works properly because st.plotly_chart() below uses
         # use_container_width=False.
         # =========================
-        width=1100,
+        width=1200,
 
         height=max(700, 28 * len(chart_df)),
 
