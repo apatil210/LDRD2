@@ -112,7 +112,7 @@ def build_bar_chart(df: pd.DataFrame):
     max_plot = transform_value(max_display) + 0.8
 
     fig.update_layout(
-        title="Percent Annual Energy by Industrial Process",
+       # title="Percent Annual Energy by Industrial Process",
 
         # CHART WIDTH CONTROL:
         # Increase this if you want a wider chart.
