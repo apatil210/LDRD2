@@ -120,7 +120,7 @@ def build_bar_chart(df: pd.DataFrame):
 
         # CHART HEIGHT CONTROL:
         # This makes the figure taller when more categories exist.
-        height=max(900, 32 * len(chart_df)),
+        height=max(800, 32 * len(chart_df)),
 
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
