@@ -69,8 +69,6 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     df_agg = df_agg[df_agg[value_col] > 0].copy()
-
-    # Convert fraction to displayed percent
     df_agg["Display Percent"] = df_agg[value_col] * 100
     df_agg["Rank"] = range(1, len(df_agg) + 1)
 
@@ -118,6 +116,47 @@ def build_bar_chart(df: pd.DataFrame):
     return fig
 
 
+def build_fact_sheet(df: pd.DataFrame, selected_process: str):
+    process_col = "Industrial process"
+    production_col = "Annual production in 2022\n(based on FU)"
+    elec_col = "SEC \nelectricity"
+    fuel_col = "SEC \nfuels"
+    steam_col = "SEC \nfuels or electricity for steam or steam from CHP"
+
+    fact_df = df.copy()
+    fact_df[process_col] = clean_category(fact_df[process_col])
+
+    for col in [production_col, elec_col, fuel_col, steam_col]:
+        fact_df[col] = pd.to_numeric(fact_df[col], errors="coerce").fillna(0)
+
+    selected_df = fact_df[fact_df[process_col] == selected_process].copy()
+
+    if selected_df.empty:
+        return None
+
+    annual_production = selected_df[production_col].sum()
+    sec_electricity = selected_df[elec_col].sum()
+    sec_fuels = selected_df[fuel_col].sum()
+    sec_steam = selected_df[steam_col].sum()
+
+    return {
+        "Annual Production": annual_production,
+        "SEC Electricity": sec_electricity,
+        "SEC Fuels": sec_fuels,
+        "SEC Steam": sec_steam,
+        "Rows": selected_df.shape[0],
+        "Details": selected_df[
+            [process_col, production_col, elec_col, fuel_col, steam_col]
+        ].rename(columns={
+            process_col: "Industrial Process",
+            production_col: "Annual Production",
+            elec_col: "SEC Electricity",
+            fuel_col: "SEC Fuels",
+            steam_col: "SEC Steam"
+        })
+    }
+
+
 st.title("Energy Classification: Industrial Process")
 
 try:
@@ -135,7 +174,32 @@ try:
         }
     )
 
-    st.subheader("Data Table")
+    process_options = bar_df["Industrial process"].tolist()
+    selected_process = st.selectbox(
+        "Select an industrial process to generate a fact sheet",
+        process_options
+    )
+
+    fact_sheet = build_fact_sheet(df, selected_process)
+
+    if fact_sheet:
+        st.subheader(f"Fact Sheet: {selected_process}")
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Annual Production", f"{fact_sheet['Annual Production']:.2f}")
+        c2.metric("SEC Electricity", f"{fact_sheet['SEC Electricity']:.2f}")
+        c3.metric("SEC Fuels", f"{fact_sheet['SEC Fuels']:.2f}")
+        c4.metric("SEC Steam", f"{fact_sheet['SEC Steam']:.2f}")
+
+        st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
+
+        st.dataframe(
+            fact_sheet["Details"],
+            use_container_width=True,
+            hide_index=True
+        )
+
+    st.subheader("Bar Chart Data")
     table_df = bar_df[["Rank", "Industrial process", "Display Percent"]].rename(
         columns={
             "Industrial process": "Industrial Process",
