@@ -207,19 +207,5 @@ try:
             hide_index=True
         )
 
-    st.subheader("Bar Chart Data")
-    table_df = bar_df[["Rank", "Industrial process", "Display Percent"]].rename(
-        columns={
-            "Industrial process": "Industrial Process",
-            "Display Percent": "Percent Annual Energy (%)"
-        }
-    )
-
-    st.dataframe(
-        table_df.style.format({"Percent Annual Energy (%)": "{:.2f}%"}),
-        use_container_width=True,
-        hide_index=True
-    )
-
 except Exception as e:
     st.error(f"App error: {e}")
