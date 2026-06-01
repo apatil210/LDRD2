@@ -13,7 +13,7 @@ st.set_page_config(
 
 pio.templates.default = "plotly"
 
-DATA_URL = "hhttps://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20Data.xlsx"
+DATA_URL = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20Data.xlsx"
 THRESHOLD_PCT = 1.0
 
 TEXT_COLOR = "#14212B"
