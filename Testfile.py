@@ -76,9 +76,9 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_bar_chart(df: pd.DataFrame):
-    break_start = 8.0
+    break_start = 7.0
     break_end = 22.0
-    compressed_gap = 1.4
+    compressed_gap = 1.2
 
     def transform_value(x):
         if x <= break_start:
