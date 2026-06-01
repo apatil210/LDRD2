@@ -76,7 +76,7 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_bar_chart(df: pd.DataFrame):
-    break_start = 8.0
+    break_start = 7.0
     break_end = 21.0
     compressed_gap = 1.2
 
@@ -100,7 +100,7 @@ def build_bar_chart(df: pd.DataFrame):
     fig.update_traces(
         texttemplate="%{text:.1f}%",
         textposition="outside",
-        cliponaxis=False,  # lets outside bar labels extend without getting clipped
+        cliponaxis=False,
         hovertemplate=(
             "<b>%{y}</b><br>"
             "Percent annual energy: %{text:.2f}%<extra></extra>"
@@ -114,29 +114,25 @@ def build_bar_chart(df: pd.DataFrame):
     fig.update_layout(
         title="Percent Annual Energy by Industrial Process",
 
-        # =========================
-        # WIDTH CONTROL FOR CHART
-        # Increase this value to make the chart wider.
-        # Example: try 1200, 1300, or 1400 if labels still get cut off.
-        # This only works properly because st.plotly_chart() below uses
-        # use_container_width=False.
-        # =========================
-        width=1200,
+        # CHART WIDTH CONTROL:
+        # Increase this if you want more horizontal room.
+        width=1250,
 
-        height=max(700, 28 * len(chart_df)),
+        # CHART HEIGHT CONTROL:
+        # Increase this if you want a taller chart before scrolling starts.
+        height=max(1100, 34 * len(chart_df)),
 
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
 
-        # =========================
-        # MARGIN CONTROL FOR LABELS
-        # Increase l for long y-axis category labels on the left.
-        # Increase r for outside percentage labels on the right.
-        # =========================
-        margin=dict(t=60, l=280, r=120, b=20),
+        # LABEL SPACE CONTROL:
+        # Increase l for long left-side labels.
+        # Increase r for outside % labels on the right.
+        margin=dict(t=60, l=300, r=140, b=20),
 
         xaxis_title="Percent Annual Energy Demand in 2022 (%)",
         yaxis_title="Industrial Process",
+        autosize=False,
         font=dict(
             family="Arial, sans-serif",
             color=TEXT_COLOR,
@@ -167,17 +163,19 @@ def build_bar_chart(df: pd.DataFrame):
     )
 
     fig.update_xaxes(
-        range=[0, max_plot + 0.8],  # extra room on right for value labels
+        range=[0, max_plot + 1.0],
         tickmode="array",
         tickvals=[0, 1, 2, 3, 4, 5, 6, 7, break_start + compressed_gap],
         ticktext=["0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "21%"],
         showgrid=True,
-        automargin=True
+        automargin=True,
+        fixedrange=False
     )
 
     fig.update_yaxes(
         categoryorder="total ascending",
-        automargin=True
+        automargin=True,
+        fixedrange=False
     )
 
     return fig
@@ -240,12 +238,8 @@ try:
     df = load_excel(DATA_URL)
     bar_df = prepare_bar_data(df)
 
-    # =========================
-    # LAYOUT WIDTH CONTROL
-    # If you want the chart column itself to be wider, increase the second number.
-    # Example: [1.0, 1.8] gives more width to the chart on the right.
-    # =========================
-    left_col, right_col = st.columns([1.1, 1.6], gap="large")
+    # Increase the second number if you want the chart column wider.
+    left_col, right_col = st.columns([1.1, 1.7], gap="large")
 
     with left_col:
         selected_process = st.selectbox(
@@ -276,23 +270,25 @@ try:
 
     with right_col:
         st.subheader("Percent Annual Energy by Industrial Process")
-        st.plotly_chart(
-            build_bar_chart(bar_df),
 
-            # =========================
-            # WIDTH CONTROL IN STREAMLIT
-            # Must be False if you want the figure width=1200 above to take effect.
-            # If True, Streamlit stretches chart to column width and ignores
-            # most of the fixed Plotly width behavior.
-            # =========================
-            use_container_width=False,
+        # SCROLLABLE CHART CONTAINER:
+        # This fixed-height container becomes scrollable when the chart is taller.
+        with st.container(height=850):
+            st.plotly_chart(
+                build_bar_chart(bar_df),
 
-            theme=None,
-            config={
-                "displayModeBar": False,
-                "scrollZoom": False
-            }
-        )
+                # Must be False so Plotly width=1250 above is respected.
+                use_container_width=False,
+
+                # You can also set the rendered element height here.
+                height=850,
+
+                theme=None,
+                config={
+                    "displayModeBar": True,
+                    "scrollZoom": False
+                }
+            )
 
 except Exception as e:
     st.error(f"App error: {e}")
