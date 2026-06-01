@@ -127,17 +127,34 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     fact_df[process_col] = clean_category(fact_df[process_col])
 
     for col in [production_col, elec_col, fuel_col, steam_col]:
-        fact_df[col] = pd.to_numeric(fact_df[col], errors="coerce").fillna(0)
+        fact_df[col] = pd.to_numeric(fact_df[col], errors="coerce")
 
     selected_df = fact_df[fact_df[process_col] == selected_process].copy()
 
     if selected_df.empty:
         return None
 
-    annual_production = selected_df[production_col].sum()
-    sec_electricity = selected_df[elec_col].sum()
-    sec_fuels = selected_df[fuel_col].sum()
-    sec_steam = selected_df[steam_col].sum()
+    production_values = (
+        selected_df[production_col]
+        .dropna()
+        .loc[lambda s: s != 0]
+        .unique()
+    )
+    annual_production = production_values[0] if len(production_values) > 0 else 0
+
+    sec_electricity = selected_df[elec_col].fillna(0).sum()
+    sec_fuels = selected_df[fuel_col].fillna(0).sum()
+    sec_steam = selected_df[steam_col].fillna(0).sum()
+
+    detail_df = selected_df[
+        [process_col, production_col, elec_col, fuel_col, steam_col]
+    ].rename(columns={
+        process_col: "Industrial Process",
+        production_col: "Annual Production",
+        elec_col: "SEC Electricity",
+        fuel_col: "SEC Fuels",
+        steam_col: "SEC Steam"
+    })
 
     return {
         "Annual Production": annual_production,
@@ -145,15 +162,7 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
         "SEC Fuels": sec_fuels,
         "SEC Steam": sec_steam,
         "Rows": selected_df.shape[0],
-        "Details": selected_df[
-            [process_col, production_col, elec_col, fuel_col, steam_col]
-        ].rename(columns={
-            process_col: "Industrial Process",
-            production_col: "Annual Production",
-            elec_col: "SEC Electricity",
-            fuel_col: "SEC Fuels",
-            steam_col: "SEC Steam"
-        })
+        "Details": detail_df
     }
 
 
@@ -174,10 +183,9 @@ try:
         }
     )
 
-    process_options = bar_df["Industrial process"].tolist()
     selected_process = st.selectbox(
         "Select an industrial process to generate a fact sheet",
-        process_options
+        bar_df["Industrial process"].tolist()
     )
 
     fact_sheet = build_fact_sheet(df, selected_process)
