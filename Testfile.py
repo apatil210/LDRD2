@@ -30,18 +30,33 @@ def load_excel(url: str) -> pd.DataFrame:
     if "text/html" in content_type.lower():
         raise ValueError("URL returned an HTML page instead of an Excel file.")
 
-    return pd.read_excel(
+    raw_df = pd.read_excel(
         BytesIO(response.content),
         sheet_name="Process-level data",
+        header=None,
         engine="openpyxl"
     )
+
+    header_row_idx = None
+    for i in range(min(len(raw_df), 20)):
+        row_values = raw_df.iloc[i].astype(str).str.strip().tolist()
+        if "Unit operation Level 2 classification" in row_values:
+            header_row_idx = i
+            break
+
+    if header_row_idx is None:
+        raise ValueError("Could not locate the header row in the Excel sheet.")
+
+    df = raw_df.iloc[header_row_idx + 1:].copy()
+    df.columns = raw_df.iloc[header_row_idx].astype(str).str.strip()
+    df = df.reset_index(drop=True)
+
+    return df
 
 
 def clean_category(series: pd.Series) -> pd.Series:
     return (
         series.astype(str)
-        .fillna("Unknown")
-        .str.replace("_", " ", regex=False)
         .str.strip()
         .replace({"": "Unknown", "nan": "Unknown", "None": "Unknown"})
     )
@@ -82,8 +97,9 @@ def build_bar_chart(
 ):
     fig = px.bar(
         df,
-        x=category_col,
-        y=value_col,
+        x=value_col,
+        y=category_col,
+        orientation="h",
         text=value_col,
         color_discrete_sequence=[BAR_COLOR]
     )
@@ -92,22 +108,22 @@ def build_bar_chart(
         texttemplate="%{text:.2f}%",
         textposition="outside",
         hovertemplate=(
-            "<b>%{x}</b><br>"
-            "Percent annual energy: %{y:.3f}%<extra></extra>"
+            "<b>%{y}</b><br>"
+            "Percent annual energy: %{x:.3f}%<extra></extra>"
         ),
         marker=dict(
-            line=dict(color="#FCFCFA", width=1.5)
+            line=dict(color="#FCFCFA", width=1.2)
         )
     )
 
     fig.update_layout(
         title=title,
-        height=700,
+        height=max(700, 28 * len(df)),
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
-        margin=dict(t=60, l=10, r=10, b=120),
-        xaxis_title="Unit Operation Level 2",
-        yaxis_title="Percent Annual Energy Demand in 2022 (%)",
+        margin=dict(t=60, l=10, r=40, b=20),
+        xaxis_title="Percent Annual Energy Demand in 2022 (%)",
+        yaxis_title="Unit Operation Level 2",
         font=dict(
             family="Arial, sans-serif",
             color=TEXT_COLOR,
@@ -116,13 +132,12 @@ def build_bar_chart(
     )
 
     fig.update_xaxes(
-        tickangle=-45,
-        categoryorder="total descending"
+        ticksuffix="%",
+        showgrid=True
     )
 
     fig.update_yaxes(
-        ticksuffix="%",
-        showgrid=True
+        categoryorder="total ascending"
     )
 
     return fig
