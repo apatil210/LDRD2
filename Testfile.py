@@ -76,7 +76,7 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_bar_chart(df: pd.DataFrame):
-    break_start = 6.90
+    break_start = 7.0
     break_end = 21.0
     compressed_gap = 1.2
 
@@ -191,10 +191,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     sec_steam = selected_df[steam_col].fillna(0).sum()
 
     detail_df = selected_df[
-        [process_col, production_col, elec_col, fuel_col, steam_col]
+        [process_col, elec_col, fuel_col, steam_col]
     ].rename(columns={
         process_col: "Industrial Process",
-        production_col: "Annual Production",
         elec_col: "SEC Electricity",
         fuel_col: "SEC Fuels",
         steam_col: "SEC Steam"
