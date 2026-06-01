@@ -122,7 +122,7 @@ def build_bar_chart(df: pd.DataFrame):
             family="Arial, sans-serif",
             color=TEXT_COLOR,
             size=14
-        ),
+        ))
 
 
     fig.update_xaxes(
