@@ -7,7 +7,7 @@ import requests
 import streamlit as st
 
 st.set_page_config(
-    page_title="Energy Classification Treemaps",
+    page_title="Energy Classification: Unit Operations",
     layout="wide"
 )
 
@@ -33,88 +33,64 @@ TREEMAP_PALETTE = [
     "#4B6A9B",
 ]
 
+
 @st.cache_data(show_spinner=False)
 def load_excel(url: str) -> pd.DataFrame:
     response = requests.get(url, timeout=30)
     response.raise_for_status()
 
-    raw = pd.read_excel(BytesIO(response.content), sheet_name="Process-level data", header=None)
+    content_type = response.headers.get("Content-Type", "")
+    if "text/html" in content_type.lower():
+        raise ValueError("URL returned an HTML page instead of an Excel file.")
 
-    raw.columns = raw.iloc[1]
-    df = raw.iloc[3:].reset_index(drop=True)
-    df.columns = [str(c).replace("\n", " ").strip() for c in df.columns]
+    return pd.read_excel(BytesIO(response.content), engine="openpyxl")
 
-    return df
 
 def clean_category(series: pd.Series) -> pd.Series:
     return (
         series.astype(str)
+        .fillna("Unknown")
         .str.replace("_", " ", regex=False)
-        .str.replace("\n", " ", regex=False)
         .str.strip()
+        .replace({"": "Unknown", "nan": "Unknown", "None": "Unknown"})
     )
 
-def to_numeric(series: pd.Series) -> pd.Series:
-    return pd.to_numeric(series, errors="coerce").fillna(0)
 
-def aggregate_percent(df: pd.DataFrame, category_col: str, value_col: str) -> pd.DataFrame:
-    work = df.copy()
+def aggregate_percent(
+    df: pd.DataFrame,
+    category_col: str,
+    value_col: str
+) -> pd.DataFrame:
+    required_columns = {category_col, value_col}
+    missing = required_columns - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
 
-    work[category_col] = clean_category(work[category_col])
-    work[value_col] = to_numeric(work[value_col])
+    df_work = df[[category_col, value_col]].copy()
+    df_work[value_col] = pd.to_numeric(df_work[value_col], errors="coerce").fillna(0)
+    df_work[category_col] = clean_category(df_work[category_col])
 
-    agg = (
-        work.groupby(category_col, as_index=False)[value_col]
+    df_agg = (
+        df_work.groupby(category_col, as_index=False)[value_col]
         .sum()
         .query(f"`{value_col}` > 0")
         .sort_values(value_col, ascending=False)
         .reset_index(drop=True)
     )
 
-    if agg.empty:
-        raise ValueError(f"No positive values found for {category_col} / {value_col}")
+    if df_agg.empty:
+        raise ValueError(f"No positive values found for {value_col}.")
 
-    total = agg[value_col].sum()
-    agg["Share_pct"] = 100 * agg[value_col] / total
-    agg["Rank"] = range(1, len(agg) + 1)
-    agg["Display_text"] = agg.apply(
+    total = df_agg[value_col].sum()
+    df_agg["Share_pct"] = 100 * df_agg[value_col] / total
+    df_agg["Rank"] = range(1, len(df_agg) + 1)
+    df_agg["Display_text"] = df_agg.apply(
         lambda r: f"<b>{r[category_col]}</b><br>{r['Share_pct']:.1f}%",
         axis=1
     )
 
-    return agg
+    return df_agg
 
-def prepare_energy_mix(df: pd.DataFrame) -> pd.DataFrame:
-    energy_cols = {
-        "Electricity": "Annual electricity demand in 2022",
-        "Fuel": "Annual fuels demand in 2022",
-        "Steam": "Annual fuels or electricity for steam or steam from CHP demand in 2022",
-    }
-
-    totals = []
-    for label, col in energy_cols.items():
-        value = to_numeric(df[col]).sum()
-        totals.append({"Category": label, "Value": value})
-
-    energy_df = pd.DataFrame(totals)
-    energy_df = energy_df.query("Value > 0").sort_values("Value", ascending=False).reset_index(drop=True)
-
-    total = energy_df["Value"].sum()
-    energy_df["Share_pct"] = 100 * energy_df["Value"] / total
-    energy_df["Rank"] = range(1, len(energy_df) + 1)
-    energy_df["Display_text"] = energy_df.apply(
-        lambda r: f"<b>{r['Category']}</b><br>{r['Share_pct']:.1f}%",
-        axis=1
-    )
-
-    return energy_df
-
-def filter_threshold(df: pd.DataFrame, threshold_pct: float) -> pd.DataFrame:
-    return (
-        df[df["Share_pct"] > threshold_pct]
-        .copy()
-        .reset_index(drop=True)
-    )
 
 def build_color_map(categories, palette):
     return {
@@ -122,16 +98,22 @@ def build_color_map(categories, palette):
         for i, cat in enumerate(categories)
     }
 
-def build_treemap(df: pd.DataFrame, label_col: str, value_col: str, title: str):
-    color_map = build_color_map(df[label_col], TREEMAP_PALETTE)
+
+def build_treemap(
+    df: pd.DataFrame,
+    category_col: str,
+    value_col: str,
+    title: str
+):
+    color_map = build_color_map(df[category_col], TREEMAP_PALETTE)
 
     fig = px.treemap(
         df,
-        path=[label_col],
+        path=[category_col],
         values=value_col,
-        color=label_col,
+        color=category_col,
         color_discrete_map=color_map,
-        custom_data=[label_col, value_col, "Share_pct", "Rank", "Display_text"]
+        custom_data=[category_col, value_col, "Share_pct", "Rank", "Display_text"]
     )
 
     fig.update_traces(
@@ -152,7 +134,7 @@ def build_treemap(df: pd.DataFrame, label_col: str, value_col: str, title: str):
         ),
         hovertemplate=(
             "<b>%{customdata[0]}</b><br>"
-            "Annual energy: %{customdata[1]:.3f} PJ<br>"
+            "Annual energy demand: %{customdata[1]:.3f} PJ<br>"
             "Share: %{customdata[2]:.2f}%<br>"
             "Rank: %{customdata[3]}<extra></extra>"
         ),
@@ -161,7 +143,7 @@ def build_treemap(df: pd.DataFrame, label_col: str, value_col: str, title: str):
 
     fig.update_layout(
         title=title,
-        height=700,
+        height=820,
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
         margin=dict(t=50, l=10, r=10, b=10),
@@ -175,67 +157,54 @@ def build_treemap(df: pd.DataFrame, label_col: str, value_col: str, title: str):
 
     return fig
 
-st.title("Energy Classification Treemaps")
+
+st.title("Energy Classification: Unit Operations")
 
 try:
     df = load_excel(DATA_URL)
 
     unit_ops = aggregate_percent(
         df,
-        category_col="Unit operation (Level 1 classification)",
+        category_col="Unit operation Level 2 classification",
         value_col="Annual energy demand in 2022"
     )
 
-    industries = aggregate_percent(
-        df,
-        category_col="Industrial process",
-        value_col="Annual energy demand in 2022"
+    unit_ops_plot = (
+        unit_ops[unit_ops["Share_pct"] > THRESHOLD_PCT]
+        .copy()
+        .sort_values("Annual energy demand in 2022", ascending=False)
+        .reset_index(drop=True)
     )
 
-    energy_mix = prepare_energy_mix(df)
-
-    unit_ops_plot = filter_threshold(unit_ops, THRESHOLD_PCT)
-    industries_plot = filter_threshold(industries, THRESHOLD_PCT)
-    energy_mix_plot = filter_threshold(energy_mix, 0.0)
-
-    st.subheader("Unit Operations by Percent Annual Energy Use")
+    st.subheader("Unit Operation Level 2 Categories > 1%")
+    fig_tree = build_treemap(
+        unit_ops_plot,
+        "Unit operation Level 2 classification",
+        "Annual energy demand in 2022",
+        "Unit Operations - Level 2"
+    )
     st.plotly_chart(
-        build_treemap(
-            unit_ops_plot,
-            "Unit operation (Level 1 classification)",
-            "Annual energy demand in 2022",
-            "Unit Operations"
-        ),
+        fig_tree,
         use_container_width=True,
         theme=None,
-        config={"displayModeBar": False, "scrollZoom": False}
+        config={
+            "displayModeBar": False,
+            "scrollZoom": False
+        }
     )
 
-    st.subheader("Industry Types by Percent Annual Energy Use")
-    st.plotly_chart(
-        build_treemap(
-            industries_plot,
-            "Industrial process",
-            "Annual energy demand in 2022",
-            "Industry Types"
-        ),
-        use_container_width=True,
-        theme=None,
-        config={"displayModeBar": False, "scrollZoom": False}
+    st.subheader("All Unit Operation Level 2 Categories")
+    table_df = unit_ops[
+        ["Rank", "Unit operation Level 2 classification", "Annual energy demand in 2022", "Share_pct"]
+    ].rename(
+        columns={
+            "Unit operation Level 2 classification": "Unit Operation Level 2",
+            "Annual energy demand in 2022": "Annual Energy (PJ)",
+            "Share_pct": "Share (%)"
+        }
     )
 
-    st.subheader("Energy Use Breakdown by Type")
-    st.plotly_chart(
-        build_treemap(
-            energy_mix_plot,
-            "Category",
-            "Value",
-            "Electricity vs Fuel vs Steam"
-        ),
-        use_container_width=True,
-        theme=None,
-        config={"displayModeBar": False, "scrollZoom": False}
-    )
+    st.dataframe(table_df, use_container_width=True, hide_index=True)
 
 except Exception as e:
     st.error(f"App error: {e}")
