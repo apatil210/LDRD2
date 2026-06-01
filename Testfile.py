@@ -5,7 +5,6 @@ import plotly.express as px
 import plotly.io as pio
 import requests
 import streamlit as st
-import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="Energy Classification: Industrial Process",
@@ -109,18 +108,16 @@ def build_bar_chart(df: pd.DataFrame):
     )
 
     max_display = chart_df["Display Percent"].max()
-    max_plot = transform_value(max_display) + 1.5
+    max_plot = transform_value(max_display) + 0.8
 
     fig.update_layout(
         title="Percent Annual Energy by Industrial Process",
-        width=1400,
-        height=max(900, 35 * len(chart_df)),
+        height=max(700, 28 * len(chart_df)),
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
-        margin=dict(t=60, l=10, r=120, b=40),
+        margin=dict(t=60, l=10, r=40, b=20),
         xaxis_title="Percent Annual Energy Demand in 2022 (%)",
         yaxis_title="Industrial Process",
-        dragmode="pan",
         font=dict(
             family="Arial, sans-serif",
             color=TEXT_COLOR,
@@ -155,48 +152,12 @@ def build_bar_chart(df: pd.DataFrame):
         tickmode="array",
         tickvals=[0, 1, 2, 3, 4, 5, 6, 7, break_start + compressed_gap],
         ticktext=["0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "21%"],
-        showgrid=True,
-        fixedrange=False
+        showgrid=True
     )
 
-    fig.update_yaxes(
-        categoryorder="total ascending",
-        automargin=True,
-        fixedrange=False
-    )
+    fig.update_yaxes(categoryorder="total ascending")
 
     return fig
-
-
-def render_scrollable_chart(fig):
-    chart_html = pio.to_html(
-        fig,
-        full_html=False,
-        include_plotlyjs="cdn",
-        config={
-            "displayModeBar": True,
-            "scrollZoom": True,
-            "responsive": False
-        }
-    )
-
-    scrollable_html = f"""
-    <div style="
-        width: 100%;
-        height: 900px;
-        overflow: auto;
-        border: 1px solid #D9D9D9;
-        border-radius: 8px;
-        background: white;
-        padding: 8px;
-    ">
-        <div style="width: 1400px; height: {fig.layout.height}px;">
-            {chart_html}
-        </div>
-    </div>
-    """
-
-    components.html(scrollable_html, height=920, scrolling=False)
 
 
 def build_fact_sheet(df: pd.DataFrame, selected_process: str):
@@ -287,8 +248,15 @@ try:
 
     with right_col:
         st.subheader("Percent Annual Energy by Industrial Process")
-        fig = build_bar_chart(bar_df)
-        render_scrollable_chart(fig)
+        st.plotly_chart(
+            build_bar_chart(bar_df),
+            use_container_width=True,
+            theme=None,
+            config={
+                "displayModeBar": False,
+                "scrollZoom": False
+            }
+        )
 
 except Exception as e:
     st.error(f"App error: {e}")
