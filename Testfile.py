@@ -215,39 +215,45 @@ try:
     df = load_excel(DATA_URL)
     bar_df = prepare_bar_data(df)
 
-    st.subheader("Percent Annual Energy by Industrial Process")
-    st.plotly_chart(
-        build_bar_chart(bar_df),
-        use_container_width=True,
-        theme=None,
-        config={
-            "displayModeBar": False,
-            "scrollZoom": False
-        }
-    )
+    left_col, right_col = st.columns([1.1, 1.4], gap="large")
 
-    selected_process = st.selectbox(
-        "Select an industrial process to generate a fact sheet",
-        bar_df["Industrial process"].tolist()
-    )
+    with left_col:
+        selected_process = st.selectbox(
+            "Select an industrial process to generate a fact sheet",
+            bar_df["Industrial process"].tolist()
+        )
 
-    fact_sheet = build_fact_sheet(df, selected_process)
+        fact_sheet = build_fact_sheet(df, selected_process)
 
-    if fact_sheet:
-        st.subheader(f"Fact Sheet: {selected_process}")
+        if fact_sheet:
+            st.subheader(f"Fact Sheet: {selected_process}")
 
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Annual Production", f"{fact_sheet['Annual Production']:.2f}")
-        c2.metric("SEC Electricity", f"{fact_sheet['SEC Electricity']:.2f}")
-        c3.metric("SEC Fuels", f"{fact_sheet['SEC Fuels']:.2f}")
-        c4.metric("SEC Steam", f"{fact_sheet['SEC Steam']:.2f}")
+            c1, c2 = st.columns(2)
+            c3, c4 = st.columns(2)
 
-        st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
+            c1.metric("Annual Production", f"{fact_sheet['Annual Production']:.2f}")
+            c2.metric("SEC Electricity", f"{fact_sheet['SEC Electricity']:.2f}")
+            c3.metric("SEC Fuels", f"{fact_sheet['SEC Fuels']:.2f}")
+            c4.metric("SEC Steam", f"{fact_sheet['SEC Steam']:.2f}")
 
-        st.dataframe(
-            fact_sheet["Details"],
+            st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
+
+            st.dataframe(
+                fact_sheet["Details"],
+                use_container_width=True,
+                hide_index=True
+            )
+
+    with right_col:
+        st.subheader("Percent Annual Energy by Industrial Process")
+        st.plotly_chart(
+            build_bar_chart(bar_df),
             use_container_width=True,
-            hide_index=True
+            theme=None,
+            config={
+                "displayModeBar": False,
+                "scrollZoom": False
+            }
         )
 
 except Exception as e:
