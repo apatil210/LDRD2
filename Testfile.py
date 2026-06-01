@@ -54,7 +54,9 @@ def load_excel(url: str) -> pd.DataFrame:
 
     rename_map = {
         "industrial process": "industrial_process",
-        "unit operation": "unit_operation",
+        "unit operation (level 1 classification)": "unit_operation_l1",
+        "unit operation (level 2 classification)": "unit_operation_l2",
+        "unit operation (level 3 classification; with details)": "unit_operation_l3",
         "annual production in 2022 based on fu": "annual_production_2022",
         "sec electricity": "sec_electricity",
         "sec fuels": "sec_fuels",
@@ -66,7 +68,7 @@ def load_excel(url: str) -> pd.DataFrame:
 
     required = [
         "industrial_process",
-        "unit_operation",
+        "unit_operation_l3",
         "annual_production_2022",
         "sec_electricity",
         "sec_fuels",
@@ -77,7 +79,7 @@ def load_excel(url: str) -> pd.DataFrame:
     missing = [c for c in required if c not in df.columns]
     if missing:
         raise ValueError(
-            f"Missing expected columns: {missing}. Available columns include: {list(df.columns)[:20]}"
+            f"Missing expected columns: {missing}. Available columns include: {list(df.columns)}"
         )
 
     return df
@@ -200,7 +202,7 @@ def build_bar_chart(df: pd.DataFrame):
 def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     fact_df = df.copy()
     fact_df["industrial_process"] = clean_category(fact_df["industrial_process"])
-    fact_df["unit_operation"] = clean_category(fact_df["unit_operation"])
+    fact_df["unit_operation_l3"] = clean_category(fact_df["unit_operation_l3"])
 
     for col in [
         "annual_production_2022",
@@ -228,9 +230,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     sec_steam = selected_df["sec_steam"].fillna(0).sum()
 
     detail_df = selected_df[
-        ["unit_operation", "sec_electricity", "sec_fuels", "sec_steam"]
+        ["unit_operation_l3", "sec_electricity", "sec_fuels", "sec_steam"]
     ].rename(columns={
-        "unit_operation": "Unit Operations",
+        "unit_operation_l3": "Unit Operations",
         "sec_electricity": "SEC Electricity",
         "sec_fuels": "SEC Fuels",
         "sec_steam": "SEC Steam"
