@@ -162,6 +162,7 @@ def build_bar_chart(df: pd.DataFrame):
 
 def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     process_col = "Industrial process"
+    unit_op_col = "Unit operation"
     production_col = "Annual production in 2022\n(based on FU)"
     elec_col = "SEC \nelectricity"
     fuel_col = "SEC \nfuels"
@@ -169,6 +170,7 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
 
     fact_df = df.copy()
     fact_df[process_col] = clean_category(fact_df[process_col])
+    fact_df[unit_op_col] = clean_category(fact_df[unit_op_col])
 
     for col in [production_col, elec_col, fuel_col, steam_col]:
         fact_df[col] = pd.to_numeric(fact_df[col], errors="coerce")
@@ -191,9 +193,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     sec_steam = selected_df[steam_col].fillna(0).sum()
 
     detail_df = selected_df[
-        [process_col, elec_col, fuel_col, steam_col]
+        [unit_op_col, elec_col, fuel_col, steam_col]
     ].rename(columns={
-        process_col: "Industrial Process",
+        unit_op_col: "Unit Operations",
         elec_col: "SEC Electricity",
         fuel_col: "SEC Fuels",
         steam_col: "SEC Steam"
