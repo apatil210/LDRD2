@@ -115,24 +115,22 @@ def build_bar_chart(df: pd.DataFrame):
         title="Percent Annual Energy by Industrial Process",
 
         # CHART WIDTH CONTROL:
-        # Increase this if you want more horizontal room.
-        width=1250,
+        # Increase this if you want a wider chart.
+        width=1200,
 
         # CHART HEIGHT CONTROL:
-        # Increase this if you want a taller chart before scrolling starts.
-        height=max(1100, 34 * len(chart_df)),
+        # This makes the figure taller when more categories exist.
+        height=max(900, 32 * len(chart_df)),
 
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
 
         # LABEL SPACE CONTROL:
-        # Increase l for long left-side labels.
-        # Increase r for outside % labels on the right.
-        margin=dict(t=60, l=300, r=140, b=20),
+        # Increase l for long y-axis labels, r for value labels on the right.
+        margin=dict(t=60, l=280, r=120, b=20),
 
         xaxis_title="Percent Annual Energy Demand in 2022 (%)",
         yaxis_title="Industrial Process",
-        autosize=False,
         font=dict(
             family="Arial, sans-serif",
             color=TEXT_COLOR,
@@ -163,19 +161,17 @@ def build_bar_chart(df: pd.DataFrame):
     )
 
     fig.update_xaxes(
-        range=[0, max_plot + 1.0],
+        range=[0, max_plot + 0.8],
         tickmode="array",
         tickvals=[0, 1, 2, 3, 4, 5, 6, 7, break_start + compressed_gap],
         ticktext=["0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "21%"],
         showgrid=True,
-        automargin=True,
-        fixedrange=False
+        automargin=True
     )
 
     fig.update_yaxes(
         categoryorder="total ascending",
-        automargin=True,
-        fixedrange=False
+        automargin=True
     )
 
     return fig
@@ -238,8 +234,7 @@ try:
     df = load_excel(DATA_URL)
     bar_df = prepare_bar_data(df)
 
-    # Increase the second number if you want the chart column wider.
-    left_col, right_col = st.columns([1.1, 1.7], gap="large")
+    left_col, right_col = st.columns([1.1, 1.6], gap="large")
 
     with left_col:
         selected_process = st.selectbox(
@@ -271,21 +266,18 @@ try:
     with right_col:
         st.subheader("Percent Annual Energy by Industrial Process")
 
-        # SCROLLABLE CHART CONTAINER:
-        # This fixed-height container becomes scrollable when the chart is taller.
+        # SINGLE-PAGE SCROLLABLE CHART PANEL:
+        # Increase this height to show more of the chart before scrolling starts.
         with st.container(height=850):
             st.plotly_chart(
                 build_bar_chart(bar_df),
 
-                # Must be False so Plotly width=1250 above is respected.
+                # Must be False so Plotly width=1200 above is respected.
                 use_container_width=False,
-
-                # You can also set the rendered element height here.
-                height=850,
 
                 theme=None,
                 config={
-                    "displayModeBar": True,
+                    "displayModeBar": False,
                     "scrollZoom": False
                 }
             )
