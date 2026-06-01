@@ -69,6 +69,9 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     df_agg = df_agg[df_agg[value_col] > 0].copy()
+
+    # Convert fraction to displayed percent
+    df_agg["Display Percent"] = df_agg[value_col] * 100
     df_agg["Rank"] = range(1, len(df_agg) + 1)
 
     return df_agg
@@ -77,19 +80,19 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
 def build_bar_chart(df: pd.DataFrame):
     fig = px.bar(
         df,
-        x="Percent Annual energy demand in 2022",
+        x="Display Percent",
         y="Industrial process",
         orientation="h",
-        text="Percent Annual energy demand in 2022",
+        text="Display Percent",
         color_discrete_sequence=[BAR_COLOR]
     )
 
     fig.update_traces(
-        texttemplate="%{text:.2f}%",
+        texttemplate="%{text:.1f}%",
         textposition="outside",
         hovertemplate=(
             "<b>%{y}</b><br>"
-            "Percent annual energy: %{x:.3f}%<extra></extra>"
+            "Percent annual energy: %{x:.2f}%<extra></extra>"
         ),
         marker=dict(line=dict(color="#FCFCFA", width=1.2))
     )
@@ -133,12 +136,18 @@ try:
     )
 
     st.subheader("Data Table")
-    table_df = bar_df.rename(columns={
-        "Industrial process": "Industrial Process",
-        "Percent Annual energy demand in 2022": "Percent Annual Energy (%)"
-    })[["Rank", "Industrial Process", "Percent Annual Energy (%)"]]
+    table_df = bar_df[["Rank", "Industrial process", "Display Percent"]].rename(
+        columns={
+            "Industrial process": "Industrial Process",
+            "Display Percent": "Percent Annual Energy (%)"
+        }
+    )
 
-    st.dataframe(table_df, use_container_width=True, hide_index=True)
+    st.dataframe(
+        table_df.style.format({"Percent Annual Energy (%)": "{:.2f}%"}),
+        use_container_width=True,
+        hide_index=True
+    )
 
 except Exception as e:
     st.error(f"App error: {e}")
