@@ -76,9 +76,21 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_bar_chart(df: pd.DataFrame):
+    break_start = 7.0
+    break_end = 21.0
+    compressed_gap = 1.2
+
+    def transform_value(x):
+        if x <= break_start:
+            return x
+        return break_start + compressed_gap + (x - break_end)
+
+    chart_df = df.copy()
+    chart_df["Plot Value"] = chart_df["Display Percent"].apply(transform_value)
+
     fig = px.bar(
-        df,
-        x="Display Percent",
+        chart_df,
+        x="Plot Value",
         y="Industrial process",
         orientation="h",
         text="Display Percent",
@@ -90,14 +102,17 @@ def build_bar_chart(df: pd.DataFrame):
         textposition="outside",
         hovertemplate=(
             "<b>%{y}</b><br>"
-            "Percent annual energy: %{x:.2f}%<extra></extra>"
+            "Percent annual energy: %{text:.2f}%<extra></extra>"
         ),
         marker=dict(line=dict(color="#FCFCFA", width=1.2))
     )
 
+    max_display = chart_df["Display Percent"].max()
+    max_plot = transform_value(max_display) + 0.8
+
     fig.update_layout(
         title="Percent Annual Energy by Industrial Process",
-        height=max(700, 28 * len(df)),
+        height=max(700, 28 * len(chart_df)),
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
         margin=dict(t=60, l=10, r=40, b=20),
@@ -107,10 +122,50 @@ def build_bar_chart(df: pd.DataFrame):
             family="Arial, sans-serif",
             color=TEXT_COLOR,
             size=14
-        )
+        ),
+        shapes=[
+            dict(
+                type="line",
+                x0=break_start + 0.35,
+                x1=break_start + 0.55,
+                y0=-0.5,
+                y1=len(chart_df) - 0.5,
+                xref="x",
+                yref="y",
+                line=dict(color="white", width=6)
+            ),
+            dict(
+                type="line",
+                x0=break_start + 0.65,
+                x1=break_start + 0.85,
+                y0=-0.5,
+                y1=len(chart_df) - 0.5,
+                xref="x",
+                yref="y",
+                line=dict(color="white", width=6)
+            )
+        ],
+        annotations=[
+            dict(
+                x=break_start + compressed_gap / 2,
+                y=1.03,
+                xref="x",
+                yref="paper",
+                text="//",
+                showarrow=False,
+                font=dict(size=18, color=TEXT_COLOR)
+            )
+        ]
     )
 
-    fig.update_xaxes(ticksuffix="%", showgrid=True)
+    fig.update_xaxes(
+        range=[0, max_plot],
+        tickmode="array",
+        tickvals=[0, 1, 2, 3, 4, 5, 6, 7, break_start + compressed_gap],
+        ticktext=["0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "21%"],
+        showgrid=True
+    )
+
     fig.update_yaxes(categoryorder="total ascending")
 
     return fig
