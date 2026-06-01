@@ -21,8 +21,8 @@ PLOT_BG = "rgba(0,0,0,0)"
 BAR_COLOR = "#0B6E74"
 
 SEC_COLOR_MAP = {
-    "SEC Electricity": "#2D728F",
-    "SEC Fuels": "#0B6E74",
+    "SEC Electricity": "#54A24B",
+    "SEC Fuels": "#F58518",
     "SEC Steam": "#8F5B34",
 }
 
