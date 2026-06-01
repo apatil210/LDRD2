@@ -77,7 +77,7 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
 
 def build_bar_chart(df: pd.DataFrame):
     break_start = 7.0
-    break_end = 22.0
+    break_end = 21.0
     compressed_gap = 1.2
 
     def transform_value(x):
@@ -249,7 +249,7 @@ try:
     with right_col:
         st.subheader("Percent Annual Energy by Industrial Process")
 
-        with st.container(height=800):
+        with st.container(height=900):
             st.plotly_chart(
                 build_bar_chart(bar_df),
                 use_container_width=True,
