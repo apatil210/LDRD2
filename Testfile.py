@@ -112,7 +112,7 @@ def build_bar_chart(df: pd.DataFrame):
 
     fig.update_layout(
         title="Percent Annual Energy by Industrial Process",
-        height=max(700, 28 * len(chart_df)),
+        height=max(900, 32 * len(chart_df)),
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
         margin=dict(t=60, l=10, r=40, b=20),
@@ -248,15 +248,17 @@ try:
 
     with right_col:
         st.subheader("Percent Annual Energy by Industrial Process")
-        st.plotly_chart(
-            build_bar_chart(bar_df),
-            use_container_width=True,
-            theme=None,
-            config={
-                "displayModeBar": False,
-                "scrollZoom": False
-            }
-        )
+
+        with st.container(height=900):
+            st.plotly_chart(
+                build_bar_chart(bar_df),
+                use_container_width=True,
+                theme=None,
+                config={
+                    "displayModeBar": False,
+                    "scrollZoom": False
+                }
+            )
 
 except Exception as e:
     st.error(f"App error: {e}")
