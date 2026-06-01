@@ -7,7 +7,7 @@ import requests
 import streamlit as st
 
 st.set_page_config(
-    page_title="Energy Classification: Unit Operations",
+    page_title="Energy Classification: Industrial Process",
     layout="wide"
 )
 
@@ -54,7 +54,7 @@ def clean_category(series: pd.Series) -> pd.Series:
 
 
 def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
-    category_col = "Unit operation (Level 2 classification)"
+    category_col = "Industrial process"
     value_col = "Percent Annual energy demand in 2022"
 
     df_work = df[[category_col, value_col]].copy()
@@ -78,7 +78,7 @@ def build_bar_chart(df: pd.DataFrame):
     fig = px.bar(
         df,
         x="Percent Annual energy demand in 2022",
-        y="Unit operation (Level 2 classification)",
+        y="Industrial process",
         orientation="h",
         text="Percent Annual energy demand in 2022",
         color_discrete_sequence=[BAR_COLOR]
@@ -95,13 +95,13 @@ def build_bar_chart(df: pd.DataFrame):
     )
 
     fig.update_layout(
-        title="Percent Annual Energy by Unit Operation Level 2",
+        title="Percent Annual Energy by Industrial Process",
         height=max(700, 28 * len(df)),
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
         margin=dict(t=60, l=10, r=40, b=20),
         xaxis_title="Percent Annual Energy Demand in 2022 (%)",
-        yaxis_title="Unit Operation Level 2",
+        yaxis_title="Industrial Process",
         font=dict(
             family="Arial, sans-serif",
             color=TEXT_COLOR,
@@ -115,13 +115,13 @@ def build_bar_chart(df: pd.DataFrame):
     return fig
 
 
-st.title("Energy Classification: Unit Operations")
+st.title("Energy Classification: Industrial Process")
 
 try:
     df = load_excel(DATA_URL)
     bar_df = prepare_bar_data(df)
 
-    st.subheader("Percent Annual Energy by Unit Operation Level 2")
+    st.subheader("Percent Annual Energy by Industrial Process")
     st.plotly_chart(
         build_bar_chart(bar_df),
         use_container_width=True,
@@ -134,9 +134,9 @@ try:
 
     st.subheader("Data Table")
     table_df = bar_df.rename(columns={
-        "Unit operation (Level 2 classification)": "Unit Operation Level 2",
+        "Industrial process": "Industrial Process",
         "Percent Annual energy demand in 2022": "Percent Annual Energy (%)"
-    })[["Rank", "Unit Operation Level 2", "Percent Annual Energy (%)"]]
+    })[["Rank", "Industrial Process", "Percent Annual Energy (%)"]]
 
     st.dataframe(table_df, use_container_width=True, hide_index=True)
 
