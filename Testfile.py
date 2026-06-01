@@ -249,7 +249,7 @@ try:
     with right_col:
         st.subheader("Percent Annual Energy by Industrial Process")
 
-        with st.container(height=850):
+        with st.container(height=850, width=500):
             st.plotly_chart(
                 build_bar_chart(bar_df),
                 use_container_width=True,
