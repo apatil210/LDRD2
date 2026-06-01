@@ -116,7 +116,7 @@ def build_bar_chart(df: pd.DataFrame):
 
         # CHART WIDTH CONTROL:
         # Increase this if you want a wider chart.
-        width=1200,
+        width=1500,
 
         # CHART HEIGHT CONTROL:
         # This makes the figure taller when more categories exist.
