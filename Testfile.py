@@ -20,6 +20,12 @@ PAPER_BG = "rgba(0,0,0,0)"
 PLOT_BG = "rgba(0,0,0,0)"
 BAR_COLOR = "#0B6E74"
 
+SEC_COLOR_MAP = {
+    "SEC Electricity": "#2D728F",
+    "SEC Fuels": "#0B6E74",
+    "SEC Steam": "#8F5B34",
+}
+
 
 @st.cache_data(show_spinner=False)
 def load_excel(url: str) -> pd.DataFrame:
@@ -112,23 +118,11 @@ def build_bar_chart(df: pd.DataFrame):
     max_plot = transform_value(max_display) + 0.8
 
     fig.update_layout(
-       # title="Percent Annual Energy by Industrial Process",
-
-        # CHART WIDTH CONTROL:
-        # Increase this if you want a wider chart.
         width=1500,
-
-        # CHART HEIGHT CONTROL:
-        # This makes the figure taller when more categories exist.
         height=max(700, 32 * len(chart_df)),
-
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
-
-        # LABEL SPACE CONTROL:
-        # Increase l for long y-axis labels, r for value labels on the right.
         margin=dict(t=60, l=280, r=120, b=20),
-
         xaxis_title="Percent Annual Energy Demand in 2022 (%)",
         yaxis_title="Industrial Process",
         font=dict(
@@ -172,6 +166,65 @@ def build_bar_chart(df: pd.DataFrame):
     fig.update_yaxes(
         categoryorder="total ascending",
         automargin=True
+    )
+
+    return fig
+
+
+def build_sec_donut(fact_sheet: dict):
+    donut_df = pd.DataFrame({
+        "SEC Type": ["SEC Electricity", "SEC Fuels", "SEC Steam"],
+        "Value": [
+            fact_sheet["SEC Electricity"],
+            fact_sheet["SEC Fuels"],
+            fact_sheet["SEC Steam"]
+        ]
+    })
+
+    donut_df = donut_df[donut_df["Value"] > 0].copy()
+
+    fig = px.pie(
+        donut_df,
+        names="SEC Type",
+        values="Value",
+        hole=0.62,
+        color="SEC Type",
+        color_discrete_map=SEC_COLOR_MAP
+    )
+
+    total_sec = donut_df["Value"].sum()
+
+    fig.update_traces(
+        textposition="outside",
+        texttemplate="%{label}<br>%{percent}",
+        hovertemplate=(
+            "<b>%{label}</b><br>"
+            "Value: %{value:.3f}<br>"
+            "Share: %{percent}<extra></extra>"
+        ),
+        marker=dict(line=dict(color="#FFFFFF", width=2))
+    )
+
+    fig.update_layout(
+        height=360,
+        margin=dict(t=20, l=20, r=20, b=20),
+        paper_bgcolor=PAPER_BG,
+        plot_bgcolor=PLOT_BG,
+        showlegend=False,
+        font=dict(
+            family="Arial, sans-serif",
+            color=TEXT_COLOR,
+            size=13
+        ),
+        annotations=[
+            dict(
+                text=f"<b>Total SEC</b><br>{total_sec:.2f}",
+                x=0.5,
+                y=0.5,
+                showarrow=False,
+                font=dict(size=16, color=TEXT_COLOR)
+            )
+        ]
     )
 
     return fig
@@ -257,6 +310,14 @@ try:
 
             st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
 
+            st.subheader("SEC Composition")
+            st.plotly_chart(
+                build_sec_donut(fact_sheet),
+                use_container_width=True,
+                theme=None,
+                config={"displayModeBar": False}
+            )
+
             st.dataframe(
                 fact_sheet["Details"],
                 use_container_width=True,
@@ -266,15 +327,10 @@ try:
     with right_col:
         st.subheader("Percent Annual Energy by Industrial Process")
 
-        # SINGLE-PAGE SCROLLABLE CHART PANEL:
-        # Increase this height to show more of the chart before scrolling starts.
         with st.container(height=850):
             st.plotly_chart(
                 build_bar_chart(bar_df),
-
-                # Must be False so Plotly width=1200 above is respected.
                 use_container_width=False,
-
                 theme=None,
                 config={
                     "displayModeBar": False,
