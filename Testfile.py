@@ -1,5 +1,4 @@
 from io import BytesIO
-import re
 
 import pandas as pd
 import plotly.express as px
@@ -22,13 +21,6 @@ PLOT_BG = "rgba(0,0,0,0)"
 BAR_COLOR = "#0B6E74"
 
 
-def normalize_col_name(col) -> str:
-    col = str(col)
-    col = col.replace("\n", " ")
-    col = re.sub(r"\s+", " ", col).strip().lower()
-    return col
-
-
 @st.cache_data(show_spinner=False)
 def load_excel(url: str) -> pd.DataFrame:
     response = requests.get(url, timeout=30)
@@ -47,40 +39,8 @@ def load_excel(url: str) -> pd.DataFrame:
 
     header_row_idx = 1
     df = raw_df.iloc[header_row_idx + 2:].copy()
-    df.columns = raw_df.iloc[header_row_idx]
+    df.columns = raw_df.iloc[header_row_idx].astype(str).str.strip()
     df = df.reset_index(drop=True)
-
-    df.columns = [normalize_col_name(c) for c in df.columns]
-
-    rename_map = {
-        "industrial process": "industrial_process",
-        "unit operation (level 1 classification)": "unit_operation_l1",
-        "unit operation (level 2 classification)": "unit_operation_l2",
-        "unit operation (level 3 classification; with details)": "unit_operation_l3",
-        "annual production in 2022 based on fu": "annual_production_2022",
-        "sec electricity": "sec_electricity",
-        "sec fuels": "sec_fuels",
-        "sec fuels or electricity for steam or steam from chp": "sec_steam",
-        "percent annual energy demand in 2022": "pct_annual_energy_2022",
-    }
-
-    df = df.rename(columns={c: rename_map.get(c, c) for c in df.columns})
-
-    required = [
-        "industrial_process",
-        "unit_operation_l3",
-        "annual_production_2022",
-        "sec_electricity",
-        "sec_fuels",
-        "sec_steam",
-        "pct_annual_energy_2022",
-    ]
-
-    missing = [c for c in required if c not in df.columns]
-    if missing:
-        raise ValueError(
-            f"Missing expected columns: {missing}. Available columns include: {list(df.columns)}"
-        )
 
     return df
 
@@ -93,31 +53,24 @@ def clean_category(series: pd.Series) -> pd.Series:
     )
 
 
-def choose_unit_operation(df: pd.DataFrame) -> pd.Series:
-    l3 = clean_category(df["unit_operation_l3"])
-    l2 = clean_category(df["unit_operation_l2"])
-    l1 = clean_category(df["unit_operation_l1"])
-
-    return l3.where(~l3.isin(["Unknown"]), l2).where(~l2.isin(["Unknown"]), l1)
-
-
 def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
-    df_work = df[["industrial_process", "pct_annual_energy_2022"]].copy()
-    df_work["industrial_process"] = clean_category(df_work["industrial_process"])
-    df_work["pct_annual_energy_2022"] = pd.to_numeric(
-        df_work["pct_annual_energy_2022"], errors="coerce"
-    ).fillna(0)
+    category_col = "Industrial process"
+    value_col = "Percent Annual energy demand in 2022"
+
+    df_work = df[[category_col, value_col]].copy()
+    df_work[category_col] = clean_category(df_work[category_col])
+    df_work[value_col] = pd.to_numeric(df_work[value_col], errors="coerce").fillna(0)
 
     df_agg = (
-        df_work.groupby("industrial_process", as_index=False)["pct_annual_energy_2022"]
+        df_work.groupby(category_col, as_index=False)[value_col]
         .sum()
-        .sort_values("pct_annual_energy_2022", ascending=False)
+        .sort_values(value_col, ascending=False)
         .reset_index(drop=True)
     )
 
-    df_agg = df_agg[df_agg["pct_annual_energy_2022"] > 0].copy()
-    df_agg["display_percent"] = df_agg["pct_annual_energy_2022"] * 100
-    df_agg["rank"] = range(1, len(df_agg) + 1)
+    df_agg = df_agg[df_agg[value_col] > 0].copy()
+    df_agg["Display Percent"] = df_agg[value_col] * 100
+    df_agg["Rank"] = range(1, len(df_agg) + 1)
 
     return df_agg
 
@@ -133,14 +86,14 @@ def build_bar_chart(df: pd.DataFrame):
         return break_start + compressed_gap + (x - break_end)
 
     chart_df = df.copy()
-    chart_df["plot_value"] = chart_df["display_percent"].apply(transform_value)
+    chart_df["Plot Value"] = chart_df["Display Percent"].apply(transform_value)
 
     fig = px.bar(
         chart_df,
-        x="plot_value",
-        y="industrial_process",
+        x="Plot Value",
+        y="Industrial process",
         orientation="h",
-        text="display_percent",
+        text="Display Percent",
         color_discrete_sequence=[BAR_COLOR]
     )
 
@@ -154,14 +107,12 @@ def build_bar_chart(df: pd.DataFrame):
         marker=dict(line=dict(color="#FCFCFA", width=1.2))
     )
 
-    max_display = chart_df["display_percent"].max()
+    max_display = chart_df["Display Percent"].max()
     max_plot = transform_value(max_display) + 0.8
-
-    dynamic_height = max(700, len(chart_df) * 38)
 
     fig.update_layout(
         title="Percent Annual Energy by Industrial Process",
-        height=dynamic_height,
+        height=max(700, 28 * len(chart_df)),
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
         margin=dict(t=60, l=10, r=40, b=20),
@@ -210,42 +161,44 @@ def build_bar_chart(df: pd.DataFrame):
 
 
 def build_fact_sheet(df: pd.DataFrame, selected_process: str):
-    fact_df = df.copy()
-    fact_df["industrial_process"] = clean_category(fact_df["industrial_process"])
-    fact_df["unit_operation_display"] = choose_unit_operation(fact_df)
+    process_col = "Industrial process"
+    unit_ops_col = "Unit operation (Level 3 classification; with details)"
+    production_col = "Annual production in 2022\n(based on FU)"
+    elec_col = "SEC \nelectricity"
+    fuel_col = "SEC \nfuels"
+    steam_col = "SEC \nfuels or electricity for steam or steam from CHP"
 
-    for col in [
-        "annual_production_2022",
-        "sec_electricity",
-        "sec_fuels",
-        "sec_steam",
-    ]:
+    fact_df = df.copy()
+    fact_df[process_col] = clean_category(fact_df[process_col])
+    fact_df[unit_ops_col] = clean_category(fact_df[unit_ops_col])
+
+    for col in [production_col, elec_col, fuel_col, steam_col]:
         fact_df[col] = pd.to_numeric(fact_df[col], errors="coerce")
 
-    selected_df = fact_df[fact_df["industrial_process"] == selected_process].copy()
+    selected_df = fact_df[fact_df[process_col] == selected_process].copy()
 
     if selected_df.empty:
         return None
 
     production_values = (
-        selected_df["annual_production_2022"]
+        selected_df[production_col]
         .dropna()
         .loc[lambda s: s != 0]
         .unique()
     )
     annual_production = production_values[0] if len(production_values) > 0 else 0
 
-    sec_electricity = selected_df["sec_electricity"].fillna(0).sum()
-    sec_fuels = selected_df["sec_fuels"].fillna(0).sum()
-    sec_steam = selected_df["sec_steam"].fillna(0).sum()
+    sec_electricity = selected_df[elec_col].fillna(0).sum()
+    sec_fuels = selected_df[fuel_col].fillna(0).sum()
+    sec_steam = selected_df[steam_col].fillna(0).sum()
 
     detail_df = selected_df[
-        ["unit_operation_display", "sec_electricity", "sec_fuels", "sec_steam"]
+        [unit_ops_col, elec_col, fuel_col, steam_col]
     ].rename(columns={
-        "unit_operation_display": "Unit Operations",
-        "sec_electricity": "SEC Electricity",
-        "sec_fuels": "SEC Fuels",
-        "sec_steam": "SEC Steam"
+        unit_ops_col: "Unit Operations",
+        elec_col: "SEC Electricity",
+        fuel_col: "SEC Fuels",
+        steam_col: "SEC Steam"
     })
 
     return {
@@ -269,7 +222,7 @@ try:
     with left_col:
         selected_process = st.selectbox(
             "Select an industrial process to generate a fact sheet",
-            bar_df["industrial_process"].tolist()
+            bar_df["Industrial process"].tolist()
         )
 
         fact_sheet = build_fact_sheet(df, selected_process)
@@ -295,18 +248,15 @@ try:
 
     with right_col:
         st.subheader("Percent Annual Energy by Industrial Process")
-
-        chart_container = st.container(height=700)
-        with chart_container:
-            st.plotly_chart(
-                build_bar_chart(bar_df),
-                use_container_width=True,
-                theme=None,
-                config={
-                    "displayModeBar": False,
-                    "scrollZoom": False
-                }
-            )
+        st.plotly_chart(
+            build_bar_chart(bar_df),
+            use_container_width=True,
+            theme=None,
+            config={
+                "displayModeBar": False,
+                "scrollZoom": False
+            }
+        )
 
 except Exception as e:
     st.error(f"App error: {e}")
