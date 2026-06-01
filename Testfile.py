@@ -100,6 +100,7 @@ def build_bar_chart(df: pd.DataFrame):
     fig.update_traces(
         texttemplate="%{text:.1f}%",
         textposition="outside",
+        cliponaxis=False,
         hovertemplate=(
             "<b>%{y}</b><br>"
             "Percent annual energy: %{text:.2f}%<extra></extra>"
@@ -115,7 +116,7 @@ def build_bar_chart(df: pd.DataFrame):
         height=max(900, 32 * len(chart_df)),
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
-        margin=dict(t=60, l=10, r=40, b=20),
+        margin=dict(t=60, l=260, r=100, b=20),
         xaxis_title="Percent Annual Energy Demand in 2022 (%)",
         yaxis_title="Industrial Process",
         font=dict(
@@ -148,14 +149,18 @@ def build_bar_chart(df: pd.DataFrame):
     )
 
     fig.update_xaxes(
-        range=[0, max_plot],
+        range=[0, max_plot + 0.8],
         tickmode="array",
         tickvals=[0, 1, 2, 3, 4, 5, 6, 7, break_start + compressed_gap],
         ticktext=["0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "21%"],
-        showgrid=True
+        showgrid=True,
+        automargin=True
     )
 
-    fig.update_yaxes(categoryorder="total ascending")
+    fig.update_yaxes(
+        categoryorder="total ascending",
+        automargin=True
+    )
 
     return fig
 
@@ -181,84 +186,4 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
         return None
 
     production_values = (
-        selected_df[production_col]
-        .dropna()
-        .loc[lambda s: s != 0]
-        .unique()
-    )
-    annual_production = production_values[0] if len(production_values) > 0 else 0
-
-    sec_electricity = selected_df[elec_col].fillna(0).sum()
-    sec_fuels = selected_df[fuel_col].fillna(0).sum()
-    sec_steam = selected_df[steam_col].fillna(0).sum()
-
-    detail_df = selected_df[
-        [unit_ops_col, elec_col, fuel_col, steam_col]
-    ].rename(columns={
-        unit_ops_col: "Unit Operations",
-        elec_col: "SEC Electricity",
-        fuel_col: "SEC Fuels",
-        steam_col: "SEC Steam"
-    })
-
-    return {
-        "Annual Production": annual_production,
-        "SEC Electricity": sec_electricity,
-        "SEC Fuels": sec_fuels,
-        "SEC Steam": sec_steam,
-        "Rows": selected_df.shape[0],
-        "Details": detail_df
-    }
-
-
-st.title("Energy Classification: Industrial Process")
-
-try:
-    df = load_excel(DATA_URL)
-    bar_df = prepare_bar_data(df)
-
-    left_col, right_col = st.columns([1.1, 1.4], gap="large")
-
-    with left_col:
-        selected_process = st.selectbox(
-            "Select an industrial process to generate a fact sheet",
-            bar_df["Industrial process"].tolist()
-        )
-
-        fact_sheet = build_fact_sheet(df, selected_process)
-
-        if fact_sheet:
-            st.subheader(f"Fact Sheet: {selected_process}")
-
-            c1, c2 = st.columns(2)
-            c3, c4 = st.columns(2)
-
-            c1.metric("Annual Production", f"{fact_sheet['Annual Production']:.2f}")
-            c2.metric("SEC Electricity", f"{fact_sheet['SEC Electricity']:.2f}")
-            c3.metric("SEC Fuels", f"{fact_sheet['SEC Fuels']:.2f}")
-            c4.metric("SEC Steam", f"{fact_sheet['SEC Steam']:.2f}")
-
-            st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
-
-            st.dataframe(
-                fact_sheet["Details"],
-                use_container_width=True,
-                hide_index=True
-            )
-
-    with right_col:
-        st.subheader("Percent Annual Energy by Industrial Process")
-
-        with st.container(height=850):
-            st.plotly_chart(
-                build_bar_chart(bar_df),
-                use_container_width=True,
-                theme=None,
-                config={
-                    "displayModeBar": False,
-                    "scrollZoom": False
-                }
-            )
-
-except Exception as e:
-    st.error(f"App error: {e}")
+        
