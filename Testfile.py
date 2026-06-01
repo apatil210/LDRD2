@@ -37,17 +37,8 @@ def load_excel(url: str) -> pd.DataFrame:
         engine="openpyxl"
     )
 
-    header_row_idx = None
-    for i in range(min(len(raw_df), 20)):
-        row_values = raw_df.iloc[i].astype(str).str.strip().tolist()
-        if "Unit operation Level 2 classification" in row_values:
-            header_row_idx = i
-            break
-
-    if header_row_idx is None:
-        raise ValueError("Could not locate the header row in the Excel sheet.")
-
-    df = raw_df.iloc[header_row_idx + 1:].copy()
+    header_row_idx = 1
+    df = raw_df.iloc[header_row_idx + 2:].copy()
     df.columns = raw_df.iloc[header_row_idx].astype(str).str.strip()
     df = df.reset_index(drop=True)
 
@@ -62,15 +53,9 @@ def clean_category(series: pd.Series) -> pd.Series:
     )
 
 
-def prepare_bar_data(
-    df: pd.DataFrame,
-    category_col: str,
-    value_col: str
-) -> pd.DataFrame:
-    required_columns = {category_col, value_col}
-    missing = required_columns - set(df.columns)
-    if missing:
-        raise ValueError(f"Missing required columns: {missing}")
+def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
+    category_col = "Unit operation (Level 2 classification)"
+    value_col = "Percent Annual energy demand in 2022"
 
     df_work = df[[category_col, value_col]].copy()
     df_work[category_col] = clean_category(df_work[category_col])
@@ -89,18 +74,13 @@ def prepare_bar_data(
     return df_agg
 
 
-def build_bar_chart(
-    df: pd.DataFrame,
-    category_col: str,
-    value_col: str,
-    title: str
-):
+def build_bar_chart(df: pd.DataFrame):
     fig = px.bar(
         df,
-        x=value_col,
-        y=category_col,
+        x="Percent Annual energy demand in 2022",
+        y="Unit operation (Level 2 classification)",
         orientation="h",
-        text=value_col,
+        text="Percent Annual energy demand in 2022",
         color_discrete_sequence=[BAR_COLOR]
     )
 
@@ -111,13 +91,11 @@ def build_bar_chart(
             "<b>%{y}</b><br>"
             "Percent annual energy: %{x:.3f}%<extra></extra>"
         ),
-        marker=dict(
-            line=dict(color="#FCFCFA", width=1.2)
-        )
+        marker=dict(line=dict(color="#FCFCFA", width=1.2))
     )
 
     fig.update_layout(
-        title=title,
+        title="Percent Annual Energy by Unit Operation Level 2",
         height=max(700, 28 * len(df)),
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
@@ -131,14 +109,8 @@ def build_bar_chart(
         )
     )
 
-    fig.update_xaxes(
-        ticksuffix="%",
-        showgrid=True
-    )
-
-    fig.update_yaxes(
-        categoryorder="total ascending"
-    )
+    fig.update_xaxes(ticksuffix="%", showgrid=True)
+    fig.update_yaxes(categoryorder="total ascending")
 
     return fig
 
@@ -147,22 +119,11 @@ st.title("Energy Classification: Unit Operations")
 
 try:
     df = load_excel(DATA_URL)
-
-    bar_df = prepare_bar_data(
-        df,
-        category_col="Unit operation Level 2 classification",
-        value_col="Percent Annual energy demand in 2022"
-    )
+    bar_df = prepare_bar_data(df)
 
     st.subheader("Percent Annual Energy by Unit Operation Level 2")
-    fig_bar = build_bar_chart(
-        bar_df,
-        "Unit operation Level 2 classification",
-        "Percent Annual energy demand in 2022",
-        "Percent Annual Energy by Unit Operation Level 2"
-    )
     st.plotly_chart(
-        fig_bar,
+        build_bar_chart(bar_df),
         use_container_width=True,
         theme=None,
         config={
@@ -172,12 +133,10 @@ try:
     )
 
     st.subheader("Data Table")
-    table_df = bar_df.rename(
-        columns={
-            "Unit operation Level 2 classification": "Unit Operation Level 2",
-            "Percent Annual energy demand in 2022": "Percent Annual Energy (%)"
-        }
-    )[["Rank", "Unit Operation Level 2", "Percent Annual Energy (%)"]]
+    table_df = bar_df.rename(columns={
+        "Unit operation (Level 2 classification)": "Unit Operation Level 2",
+        "Percent Annual energy demand in 2022": "Percent Annual Energy (%)"
+    })[["Rank", "Unit Operation Level 2", "Percent Annual Energy (%)"]]
 
     st.dataframe(table_df, use_container_width=True, hide_index=True)
 
