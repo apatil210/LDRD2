@@ -17,6 +17,7 @@ st.set_page_config(
 pio.templates.default = "plotly"
 
 DATA_URL = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20Data.xlsx"
+SHEET_NAME = "Process-level data"
 
 TEXT_COLOR = "#14212B"
 PAPER_BG = "rgba(0,0,0,0)"
@@ -30,20 +31,18 @@ SEC_COLOR_MAP = {
 }
 
 # ----------------------------
-# Column names
+# Canonical column names
 # ----------------------------
-SHEET_NAME = "Process-level data"
-
-COL_L2 = "Unit operation (Level 2 classification)"
-COL_L3 = "Unit operation (Level 3 classification; with details)"
+COL_L2 = "Unit operation Level 2 classification"
+COL_L3 = "Unit operation Level 3 classification with details"
 COL_PERCENT_ENERGY = "Percent Annual energy demand in 2022"
 
-COL_ANNUAL_PRODUCTION = "Annual production in 2022\n(based on FU)"
+COL_ANNUAL_PRODUCTION = "Annual production in 2022 based on FU"
 COL_ANNUAL_ENERGY = "Annual energy demand in 2022"
 
-COL_SEC_ELECTRICITY = "SEC \nelectricity"
-COL_SEC_FUELS = "SEC \nfuels"
-COL_SEC_STEAM = "SEC \nfuels or electricity for steam or steam from CHP"
+COL_SEC_ELECTRICITY = "SEC electricity"
+COL_SEC_FUELS = "SEC fuels"
+COL_SEC_STEAM = "SEC fuels or electricity for steam or steam from CHP"
 
 COL_EFFICIENCY = "Efficiency"
 COL_PROCESS_TEMP = "Process temperature"
@@ -53,6 +52,77 @@ COL_PROCESS_PRESSURE = "Process pressure"
 COL_INLET_PRESSURE = "Inlet pressure"
 COL_OUTLET_PRESSURE = "Outlet pressure"
 COL_RESIDENCE_TIME = "Residence time"
+
+
+# ----------------------------
+# Helpers
+# ----------------------------
+def normalize_text(value) -> str:
+    if pd.isna(value):
+        return ""
+    return (
+        str(value)
+        .replace("\n", " ")
+        .replace("\r", " ")
+        .strip()
+    )
+
+
+def clean_category(series: pd.Series) -> pd.Series:
+    return (
+        series.astype(str)
+        .str.strip()
+        .replace({
+            "": "Unknown",
+            "nan": "Unknown",
+            "None": "Unknown"
+        })
+    )
+
+
+def to_numeric_safe(series: pd.Series) -> pd.Series:
+    return pd.to_numeric(series, errors="coerce")
+
+
+def rename_columns_flexibly(df: pd.DataFrame) -> pd.DataFrame:
+    rename_map = {}
+    for col in df.columns:
+        norm = normalize_text(col)
+
+        if norm == "Unit operation Level 2 classification":
+            rename_map[col] = COL_L2
+        elif norm == "Unit operation Level 3 classification with details":
+            rename_map[col] = COL_L3
+        elif norm == "Percent Annual energy demand in 2022":
+            rename_map[col] = COL_PERCENT_ENERGY
+        elif norm == "Annual production in 2022 based on FU":
+            rename_map[col] = COL_ANNUAL_PRODUCTION
+        elif norm == "Annual energy demand in 2022":
+            rename_map[col] = COL_ANNUAL_ENERGY
+        elif norm == "SEC electricity":
+            rename_map[col] = COL_SEC_ELECTRICITY
+        elif norm == "SEC fuels":
+            rename_map[col] = COL_SEC_FUELS
+        elif norm == "SEC fuels or electricity for steam or steam from CHP":
+            rename_map[col] = COL_SEC_STEAM
+        elif norm == "Efficiency":
+            rename_map[col] = COL_EFFICIENCY
+        elif norm == "Process temperature":
+            rename_map[col] = COL_PROCESS_TEMP
+        elif norm == "Inlet temperature":
+            rename_map[col] = COL_INLET_TEMP
+        elif norm == "Outlet temperature":
+            rename_map[col] = COL_OUTLET_TEMP
+        elif norm == "Process pressure":
+            rename_map[col] = COL_PROCESS_PRESSURE
+        elif norm == "Inlet pressure":
+            rename_map[col] = COL_INLET_PRESSURE
+        elif norm == "Outlet pressure":
+            rename_map[col] = COL_OUTLET_PRESSURE
+        elif norm == "Residence time":
+            rename_map[col] = COL_RESIDENCE_TIME
+
+    return df.rename(columns=rename_map)
 
 
 # ----------------------------
@@ -74,33 +144,19 @@ def load_excel_data(url: str) -> pd.DataFrame:
         engine="openpyxl"
     )
 
-    # In this workbook, the actual field names are on the second visible header row.
     header_row_idx = 1
 
     df = raw_df.iloc[header_row_idx + 2:].copy()
-    df.columns = raw_df.iloc[header_row_idx].astype(str).str.strip()
+    df.columns = raw_df.iloc[header_row_idx].map(normalize_text)
     df = df.reset_index(drop=True)
+    df = rename_columns_flexibly(df)
+
+    required_cols = [COL_L2, COL_PERCENT_ENERGY]
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required columns: {missing}")
 
     return df
-
-
-# ----------------------------
-# Utility functions
-# ----------------------------
-def clean_category(series: pd.Series) -> pd.Series:
-    return (
-        series.astype(str)
-        .str.strip()
-        .replace({
-            "": "Unknown",
-            "nan": "Unknown",
-            "None": "Unknown"
-        })
-    )
-
-
-def to_numeric_safe(series: pd.Series) -> pd.Series:
-    return pd.to_numeric(series, errors="coerce")
 
 
 # ----------------------------
@@ -130,7 +186,11 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     fact_df = df.copy()
 
     fact_df[COL_L2] = clean_category(fact_df[COL_L2])
-    fact_df[COL_L3] = clean_category(fact_df[COL_L3])
+
+    if COL_L3 in fact_df.columns:
+        fact_df[COL_L3] = clean_category(fact_df[COL_L3])
+    else:
+        fact_df[COL_L3] = "Unknown"
 
     selected_df = fact_df[fact_df[COL_L2] == selected_l2].copy()
 
@@ -146,6 +206,8 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     ]
 
     for col in numeric_cols:
+        if col not in selected_df.columns:
+            selected_df[col] = 0
         selected_df[col] = to_numeric_safe(selected_df[col])
 
     production_values = (
@@ -157,27 +219,30 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
 
     annual_production = production_values[0] if len(production_values) > 0 else 0
     annual_energy = selected_df[COL_ANNUAL_ENERGY].fillna(0).sum()
-
     sec_electricity = selected_df[COL_SEC_ELECTRICITY].fillna(0).sum()
     sec_fuels = selected_df[COL_SEC_FUELS].fillna(0).sum()
     sec_steam = selected_df[COL_SEC_STEAM].fillna(0).sum()
 
-    detail_df = selected_df[
-        [
-            COL_L3,
-            COL_SEC_ELECTRICITY,
-            COL_SEC_FUELS,
-            COL_SEC_STEAM,
-            COL_EFFICIENCY,
-            COL_PROCESS_TEMP,
-            COL_INLET_TEMP,
-            COL_OUTLET_TEMP,
-            COL_PROCESS_PRESSURE,
-            COL_INLET_PRESSURE,
-            COL_OUTLET_PRESSURE,
-            COL_RESIDENCE_TIME,
-        ]
-    ].rename(columns={
+    detail_columns = [
+        COL_L3,
+        COL_SEC_ELECTRICITY,
+        COL_SEC_FUELS,
+        COL_SEC_STEAM,
+        COL_EFFICIENCY,
+        COL_PROCESS_TEMP,
+        COL_INLET_TEMP,
+        COL_OUTLET_TEMP,
+        COL_PROCESS_PRESSURE,
+        COL_INLET_PRESSURE,
+        COL_OUTLET_PRESSURE,
+        COL_RESIDENCE_TIME,
+    ]
+
+    for col in detail_columns:
+        if col not in selected_df.columns:
+            selected_df[col] = None
+
+    detail_df = selected_df[detail_columns].rename(columns={
         COL_L3: "Unit Operations",
         COL_SEC_ELECTRICITY: "SEC Electricity",
         COL_SEC_FUELS: "SEC Fuels",
@@ -229,12 +294,12 @@ def build_bar_chart(df: pd.DataFrame):
     )
 
     fig.update_traces(
-        texttemplate="%{text:.1f}%",
+        texttemplate="%{text:.2f}%",
         textposition="outside",
         cliponaxis=False,
         hovertemplate=(
             "<b>%{y}</b><br>"
-            "Percent annual energy: %{text:.2f}%<extra></extra>"
+            "Percent annual energy: %{text:.4f}%<extra></extra>"
         ),
         marker=dict(
             line=dict(color="#FCFCFA", width=1.2)
@@ -310,13 +375,22 @@ def build_sec_donut(fact_sheet: dict):
 
     donut_df = donut_df[donut_df["Value"] > 0].copy()
 
+    if donut_df.empty:
+        donut_df = pd.DataFrame({
+            "SEC Type": ["No SEC data"],
+            "Value": [1]
+        })
+        color_map = {"No SEC data": "#B8C4CC"}
+    else:
+        color_map = SEC_COLOR_MAP
+
     fig = px.pie(
         donut_df,
         names="SEC Type",
         values="Value",
         hole=0.62,
         color="SEC Type",
-        color_discrete_map=SEC_COLOR_MAP
+        color_discrete_map=color_map
     )
 
     total_sec = donut_df["Value"].sum()
@@ -345,7 +419,7 @@ def build_sec_donut(fact_sheet: dict):
         ),
         annotations=[
             dict(
-                text=f"<b>Total SEC (GJ/t)</b><br>{total_sec:.2f}",
+                text=f"<b>Total SEC</b><br>{total_sec:.2f}",
                 x=0.5,
                 y=0.5,
                 showarrow=False,
