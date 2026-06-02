@@ -8,102 +8,193 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     .stApp {
-        background: #f2f2f2;
+        background: #ffffff;
     }
 
     .block-container {
-        max-width: 1280px;
-        padding-top: 2rem;
-        padding-bottom: 3rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        max-width: 1200px;
+        padding-top: 1.4rem;
+        padding-bottom: 1.5rem;
+        padding-left: 2.25rem;
+        padding-right: 2.25rem;
+    }
+
+    .page-shell {
+        min-height: calc(100vh - 3rem);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 1.2rem;
+    }
+
+    .title-wrap {
+        text-align: center;
+        padding-top: 0.25rem;
     }
 
     .hero-title {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.4rem);
+        font-size: clamp(1.7rem, 1.2rem + 1.4vw, 2.7rem);
         font-weight: 800;
-        line-height: 1.15;
-        letter-spacing: -0.02em;
-        text-align: center;
-        color: #111111;
-        margin: 0 0 2.5rem 0;
+        line-height: 1.12;
+        letter-spacing: -0.03em;
+        color: #101828;
+        margin: 0;
+        text-wrap: balance;
+    }
+
+    .content-grid {
+        display: grid;
+        grid-template-columns: 1.8fr 0.9fr;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    .statement-panel {
+        padding-right: 0.25rem;
+    }
+
+    .eyebrow {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #275d88;
+        margin-bottom: 0.55rem;
     }
 
     .section-title {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(1.45rem, 1.1rem + 0.9vw, 2rem);
+        font-size: clamp(1.45rem, 1.1rem + 0.8vw, 2rem);
         font-weight: 800;
-        color: #111111;
-        margin-top: 0.5rem;
-        margin-bottom: 0.75rem;
+        line-height: 1.15;
+        color: #101828;
+        margin: 0 0 0.85rem 0;
     }
 
     .body-copy {
-        font-family: 'Source Serif 4', serif;
-        font-size: clamp(1.05rem, 0.98rem + 0.3vw, 1.18rem);
-        line-height: 1.65;
-        color: #262626;
-        text-align: left;
-        margin-bottom: 2.5rem;
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(0.96rem, 0.9rem + 0.2vw, 1.06rem);
+        line-height: 1.58;
+        color: #344054;
+        margin: 0;
+        max-width: 76ch;
+    }
+
+    .body-copy p {
+        margin: 0;
+    }
+
+    .highlights-panel {
+        border-left: 1px solid #e4e7ec;
+        padding-left: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        justify-content: center;
+        min-height: 100%;
+    }
+
+    .panel-label {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #667085;
+        margin-bottom: 0.15rem;
+    }
+
+    .nav-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.2rem;
+        align-items: stretch;
     }
 
     .nav-card {
-        background: #2d658f;
-        border: 2px solid #1d4868;
-        color: white;
-        text-align: center;
-        font-family: 'Inter', sans-serif;
-        font-size: clamp(1.1rem, 1rem + 0.5vw, 1.45rem);
-        font-weight: 500;
-        line-height: 1.2;
-        min-height: 92px;
+        background: linear-gradient(180deg, #2f6e9d 0%, #24597e 100%);
+        border: 1px solid #1f4f72;
+        color: #ffffff;
+        border-radius: 14px;
+        min-height: 108px;
+        padding: 1rem 1.1rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 1rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        margin: 0.5rem auto 2rem auto;
-        max-width: 220px;
+        text-align: center;
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(1rem, 0.95rem + 0.35vw, 1.28rem);
+        font-weight: 700;
+        line-height: 1.18;
+        box-shadow: 0 10px 24px rgba(23, 61, 94, 0.12);
+    }
+
+    .contributors {
+        border-top: 1px solid #e4e7ec;
+        padding-top: 1rem;
     }
 
     .contributors-title {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(1.4rem, 1.05rem + 0.8vw, 1.9rem);
+        font-size: 1rem;
         font-weight: 800;
-        color: #111111;
-        margin-top: 1.5rem;
+        color: #101828;
         margin-bottom: 0.25rem;
     }
 
     .contributors-names {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(1.2rem, 1rem + 0.7vw, 1.75rem);
-        line-height: 1.3;
-        color: #111111;
-        margin-bottom: 0.2rem;
+        font-size: clamp(1.05rem, 0.98rem + 0.35vw, 1.3rem);
+        line-height: 1.35;
+        color: #101828;
+        margin-bottom: 0.15rem;
     }
 
     .contributors-affiliation {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(1.1rem, 0.95rem + 0.6vw, 1.55rem);
-        line-height: 1.3;
+        font-size: clamp(0.98rem, 0.93rem + 0.2vw, 1.15rem);
+        line-height: 1.35;
+        color: #475467;
         font-style: italic;
-        color: #111111;
     }
 
-    div[data-testid="column"] {
-        display: flex;
-        justify-content: center;
+    @media (max-width: 980px) {
+        .content-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .highlights-panel {
+            border-left: 0;
+            border-top: 1px solid #e4e7ec;
+            padding-left: 0;
+            padding-top: 1.25rem;
+        }
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 720px) {
         .block-container {
             padding-left: 1rem;
             padding-right: 1rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .page-shell {
+            gap: 1rem;
+        }
+
+        .nav-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .nav-card {
+            min-height: 86px;
         }
     }
     </style>
@@ -113,37 +204,40 @@ st.markdown(
 
 st.markdown(
     """
-    <div class="hero-title">Industrial Energy Modeling through Mapping Unit Operation Energy Demand</div>
-    """,
-    unsafe_allow_html=True,
-)
+    <div class="page-shell">
+        <div class="title-wrap">
+            <h1 class="hero-title">Industrial Energy Modeling through Mapping Unit Operation Energy Demand</h1>
+        </div>
 
-st.markdown(
-    """
-    <div class="section-title">Project Statement</div>
-    <div class="body-copy">
-        The term 'industry' refers to a wide range of thermodynamic, mechanical, and chemical processes that transform materials, each involving distinct unit operations. While these processes vary in terms of the number, sequence, and type of unit operations, common operations such as drying, distillation, and compression are shared across sectors. However, the breakdown of industrial energy demand by these unit operations has remained poorly established. Moreover, industrial models at the level of unit operations are scarce. If developed, these models could ultimately serve as fundamental building blocks for system-level industrial process and facility design and optimization. Current frameworks such as the North American Industry Classification System (NAICS) categorize industrial activities based on what they produce (e.g., chemicals, food, metals), not how they use energy, creating silos of subsectors when conducting energy-related analyses. Our work developed a comprehensive analytical framework to analyze energy demand in industrial processes at the unit-operation level. The initial workflow involved gathering data for industrial processes representing nearly two-thirds of U.S. manufacturing and analyzing energy demand profiles by disaggregating these processes into unit operations. Clustering and ranking unit operations by energy demand to identify priority areas for technological advancements that offer the greatest competitive advantage. The overarching goal is to build a novel approach for characterizing US industrial sector, one that is based on unit operations.
+        <div class="content-grid">
+            <section class="statement-panel">
+                <div class="eyebrow">Research overview</div>
+                <h2 class="section-title">Project Statement</h2>
+                <div class="body-copy">
+                    <p>The term 'industry' refers to a wide range of thermodynamic, mechanical, and chemical processes that transform materials, each involving distinct unit operations. While these processes vary in number, sequence, and type, common operations such as drying, distillation, and compression are shared across sectors. However, the breakdown of industrial energy demand by these unit operations has remained poorly established, and unit-operation-level industrial models are still scarce.</p>
+                    <br>
+                    <p>If developed, these models could serve as building blocks for system-level industrial process and facility design. Current frameworks such as the North American Industry Classification System (NAICS) categorize industries by what they produce rather than how they use energy, which can create silos in energy-related analysis. This work develops a comprehensive analytical framework to evaluate energy demand in industrial processes at the unit-operation level.</p>
+                    <br>
+                    <p>The initial workflow gathered data for industrial processes representing nearly two-thirds of U.S. manufacturing and analyzed energy demand by disaggregating those processes into unit operations. By clustering and ranking unit operations according to energy demand, the framework identifies priority areas for technological advancement and supports a new approach to characterizing the U.S. industrial sector based on unit operations.</p>
+                </div>
+            </section>
+
+            <aside class="highlights-panel">
+                <div class="panel-label">Core framework</div>
+                <div class="nav-grid">
+                    <div class="nav-card">Industry Data</div>
+                    <div class="nav-card">Unit Operation<br>Data</div>
+                    <div class="nav-card">NAICS Sector<br>Coverage</div>
+                </div>
+            </aside>
+        </div>
+
+        <section class="contributors">
+            <div class="contributors-title">Contributors</div>
+            <div class="contributors-names">Akash Patil, M. Jibran S. Zuberi, Prakash Rao, Unique Karki</div>
+            <div class="contributors-affiliation">Lawrence Berkeley National Laboratory, Berkeley, CA 94720</div>
+        </section>
     </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-col1, col2, col3 = st.columns(3, gap="large")
-
-with col1:
-    st.markdown("<div class='nav-card'>Industry Data</div>", unsafe_allow_html=True)
-
-with col2:
-    st.markdown("<div class='nav-card'>Unit Operation<br>Data</div>", unsafe_allow_html=True)
-
-with col3:
-    st.markdown("<div class='nav-card'>NAICS Sector<br>Coverage</div>", unsafe_allow_html=True)
-
-st.markdown(
-    """
-    <div class="contributors-title">Contributors:</div>
-    <div class="contributors-names">Akash Patil, M. Jibran S. Zuberi, Prakash Rao, Unique Karki</div>
-    <div class="contributors-affiliation">Lawrence Berkeley National Laboratory, Berkeley, CA 94720</div>
     """,
     unsafe_allow_html=True,
 )
