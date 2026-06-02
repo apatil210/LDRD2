@@ -239,7 +239,7 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     fuel_col = "SEC \nfuels"
     steam_col = "SEC \nfuels or electricity for steam or steam from CHP"
 
-    eff_col = "Efficiency"
+    efficiency_col = "Efficiency"
     process_temp_col = "Process temperature"
     inlet_temp_col = "Inlet temperature"
     outlet_temp_col = "Outlet temperature"
@@ -252,22 +252,25 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     fact_df[process_col] = clean_category(fact_df[process_col])
     fact_df[unit_ops_col] = clean_category(fact_df[unit_ops_col])
 
-    for col in [
+    numeric_cols = [
         production_col,
         annual_energy_col,
         elec_col,
         fuel_col,
         steam_col,
-        eff_col,
+        efficiency_col,
         process_temp_col,
         inlet_temp_col,
         outlet_temp_col,
         process_pressure_col,
         inlet_pressure_col,
-        outlet_pressure_col,
-        residence_time_col,
-    ]:
+        outlet_pressure_col
+    ]
+
+    for col in numeric_cols:
         fact_df[col] = pd.to_numeric(fact_df[col], errors="coerce")
+
+    fact_df[residence_time_col] = clean_category(fact_df[residence_time_col])
 
     selected_df = fact_df[fact_df[process_col] == selected_process].copy()
 
@@ -293,28 +296,28 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
             elec_col,
             fuel_col,
             steam_col,
-            eff_col,
+            efficiency_col,
             process_temp_col,
             inlet_temp_col,
             outlet_temp_col,
             process_pressure_col,
             inlet_pressure_col,
             outlet_pressure_col,
-            residence_time_col,
+            residence_time_col
         ]
     ].rename(columns={
         unit_ops_col: "Unit Operations",
         elec_col: "SEC Electricity",
         fuel_col: "SEC Fuels",
         steam_col: "SEC Steam",
-        eff_col: "Efficiency",
+        efficiency_col: "Efficiency",
         process_temp_col: "Process temperature",
         inlet_temp_col: "Inlet temperature",
         outlet_temp_col: "Outlet temperature",
         process_pressure_col: "Process pressure",
         inlet_pressure_col: "Inlet pressure",
         outlet_pressure_col: "Outlet pressure",
-        residence_time_col: "Residence time",
+        residence_time_col: "Residence time"
     })
 
     return {
