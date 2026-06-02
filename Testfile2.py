@@ -436,7 +436,7 @@ try:
             )
 
     with right_col:
-        st.subheader("Summed Percent Annual Energy by Level 2 Unit Operation")
+        st.subheader("Percent Annual Energy by Unit Operation Classification")
 
         with st.container(height=1000):
             st.plotly_chart(
