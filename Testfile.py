@@ -1,179 +1,376 @@
+from io import BytesIO
+
+import pandas as pd
+import plotly.express as px
+import plotly.io as pio
+import requests
 import streamlit as st
 
-st.set_page_config(page_title="Industrial Energy Modeling", layout="wide")
-
-st.markdown(
-    """
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap');
-
-    .stApp {
-        background: white;
-    }
-
-    .block-container {
-        max-width: 1280px;
-        padding-top: 5rem;
-        padding-bottom: 1.2rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
-    }
-
-    .hero-title {
-        font-family: 'Inter', sans-serif;
-        font-size: clamp(1.6rem, 1.1rem + 1.2vw, 2.3rem);
-        font-weight: 800;
-        line-height: 1.12;
-        letter-spacing: -0.03em;
-        text-align: center;
-        color: #101828;
-        margin: 0.5rem 0 1.5rem 0;
-    }
-
-    .section-title {
-        font-family: 'Inter', sans-serif;
-        font-size: clamp(1.35rem, 1.05rem + 0.7vw, 1.9rem);
-        font-weight: 800;
-        line-height: 1.15;
-        color: #101828;
-        margin: 0 0 0.7rem 0;
-    }
-
-    .body-copy {
-        font-family: 'Source Serif 4', serif;
-        font-size: clamp(1rem, 0.96rem + 0.2vw, 1.15rem);
-        line-height: 1.55;
-        color: #1f2937;
-        margin-bottom: 1.8rem;
-        text-align: justify;
-        text-justify: inter-word;
-    }
-
-    .contributors-title {
-        font-family: 'Inter', sans-serif;
-        font-size: clamp(1.2rem, 1rem + 0.5vw, 1.55rem);
-        font-weight: 800;
-        color: #101828;
-        margin-top: 1.2rem;
-        margin-bottom: 0.2rem;
-    }
-
-    .contributors-names {
-        font-family: 'Inter', sans-serif;
-        font-size: clamp(1rem, 0.96rem + 0.2vw, 1.2rem);
-        color: #101828;
-        margin-bottom: 0.15rem;
-    }
-
-    .contributors-affiliation {
-        font-family: 'Inter', sans-serif;
-        font-size: clamp(0.98rem, 0.94rem + 0.15vw, 1.12rem);
-        color: #101828;
-        font-style: normal;
-    }
-
-    .nav-link,
-    .nav-link:visited,
-    .nav-link:hover,
-    .nav-link:active {
-        text-decoration: none;
-        color: inherit;
-    }
-
-    .nav-card {
-        background: #2d658f;
-        border: 2px solid #1d4868;
-        color: white;
-        text-align: center;
-        font-family: 'Inter', sans-serif;
-        font-size: clamp(1rem, 0.95rem + 0.2vw, 1.3rem);
-        font-weight: 500;
-        line-height: 1.2;
-        min-height: 88px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0.9rem 1rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        margin: 0.5rem auto 1rem auto;
-        max-width: 240px;
-        cursor: pointer;
-    }
-
-    .nav-subtext {
-        font-size: 0.9rem;
-        font-weight: 400;
-        margin-top: 0.25rem;
-    }
-
-    div[data-testid="column"] {
-        display: flex;
-        justify-content: center;
-    }
-
-    @media (max-width: 768px) {
-        .block-container {
-            padding-top: 2.2rem;
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-
-        .hero-title {
-            margin-top: 0.25rem;
-        }
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
+st.set_page_config(
+page_title="US Manufacturing Energy Classification",
+layout="wide"
 )
 
-st.markdown(
-    '<div class="hero-title">Industrial Energy Modeling through Mapping Unit Operation Energy Demand</div>',
-    unsafe_allow_html=True,
+pio.templates.default = "plotly"
+
+DATA_URL = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20Data.xlsx"
+
+TEXT_COLOR = "#14212B"
+PAPER_BG = "rgba(0,0,0,0)"
+PLOT_BG = "rgba(0,0,0,0)"
+BAR_COLOR = "#0B6E74"
+
+SEC_COLOR_MAP = {
+"SEC Electricity": "#54A24B",
+"SEC Fuels": "#F58518",
+"SEC Steam": "#4C78A8",
+}
+
+
+@st.cache_data(show_spinner=False)
+def load_excel(url: str) -> pd.DataFrame:
+response = requests.get(url, timeout=30)
+response.raise_for_status()
+
+content_type = response.headers.get("Content-Type", "")
+if "text/html" in content_type.lower():
+raise ValueError("URL returned an HTML page instead of an Excel file.")
+
+raw_df = pd.read_excel(
+BytesIO(response.content),
+sheet_name="Process-level data",
+header=None,
+engine="openpyxl"
 )
 
-st.markdown(
-    '<div class="section-title">Project Statement</div>',
-    unsafe_allow_html=True,
+header_row_idx = 1
+df = raw_df.iloc[header_row_idx + 2:].copy()
+df.columns = raw_df.iloc[header_row_idx].astype(str).str.strip()
+df = df.reset_index(drop=True)
+
+return df
+
+
+def clean_category(series: pd.Series) -> pd.Series:
+return (
+series.astype(str)
+.str.strip()
+.replace({"": "Unknown", "nan": "Unknown", "None": "Unknown"})
 )
 
-st.markdown(
-    """
-    <div class="body-copy">
-    The term 'industry' refers to a wide range of thermodynamic, mechanical, and chemical processes that transform materials, each involving distinct unit operations. While these processes vary in terms of the number, sequence, and type of unit operations, common operations such as drying, distillation, and compression are shared across sectors. However, the breakdown of industrial energy demand by these unit operations has remained poorly established. Moreover, industrial models at the level of unit operations are scarce. If developed, these models could ultimately serve as fundamental building blocks for system-level industrial process and facility design and optimization. Current frameworks such as the North American Industry Classification System (NAICS) categorize industrial activities based on what they produce (e.g., chemicals, food, metals), not how they use energy, creating silos of subsectors when conducting energy-related analyses. Our work developed a comprehensive analytical framework to analyze energy demand in industrial processes at the unit-operation level. The initial workflow involved gathering data for industrial processes representing nearly two-thirds of U.S. manufacturing and analyzing energy demand profiles by disaggregating these processes into unit operations. Clustering and ranking unit operations by energy demand to identify priority areas for technological advancements that offer the greatest competitive advantage. The overarching goal is to build a novel approach for characterizing US industrial sector, one that is based on unit operations.
-    </div>
-    """,
-    unsafe_allow_html=True,
+
+def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
+category_col = "Industrial process"
+value_col = "Percent Annual energy demand in 2022"
+
+df_work = df[[category_col, value_col]].copy()
+df_work[category_col] = clean_category(df_work[category_col])
+df_work[value_col] = pd.to_numeric(df_work[value_col], errors="coerce").fillna(0)
+
+df_agg = (
+df_work.groupby(category_col, as_index=False)[value_col]
+.sum()
+.sort_values(value_col, ascending=False)
+.reset_index(drop=True)
 )
 
-col1, col2, col3 = st.columns(3, gap="large")
+df_agg = df_agg[df_agg[value_col] > 0].copy()
+df_agg["Display Percent"] = df_agg[value_col] * 100
+df_agg["Rank"] = range(1, len(df_agg) + 1)
 
-with col1:
-    st.markdown(
-        '''
-        <a class="nav-link" href="https://github.com/apatil210/LDRD2/blob/main/Testfile.py" target="_blank" rel="noopener noreferrer">
-            <div class="nav-card">
-                <div>Industry Data</div>
-                <div class="nav-subtext">[Click Here]</div>
-            </div>
-        </a>
-        ''',
-        unsafe_allow_html=True,
-    )
+return df_agg
 
-with col2:
-    st.markdown('<div class="nav-card">Unit Operation<br>Data</div>', unsafe_allow_html=True)
 
-with col3:
-    st.markdown('<div class="nav-card">NAICS Sector<br>Coverage</div>', unsafe_allow_html=True)
+def build_bar_chart(df: pd.DataFrame):
+break_start = 8.0
+break_end = 21.0
+compressed_gap = 1.2
 
-st.markdown('<div class="contributors-title">Contributors:</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="contributors-names">Akash Patil, M. Jibran S. Zuberi, Prakash Rao, Unique Karki</div>',
-    unsafe_allow_html=True,
+def transform_value(x):
+if x <= break_start:
+return x
+return break_start + compressed_gap + (x - break_end)
+
+chart_df = df.copy()
+chart_df["Plot Value"] = chart_df["Display Percent"].apply(transform_value)
+
+fig = px.bar(
+chart_df,
+x="Plot Value",
+y="Industrial process",
+orientation="h",
+text="Display Percent",
+color_discrete_sequence=[BAR_COLOR]
 )
-st.markdown(
-    '<div class="contributors-affiliation">Lawrence Berkeley National Laboratory</div>',
-    unsafe_allow_html=True,
+
+fig.update_traces(
+texttemplate="%{text:.1f}%",
+textposition="outside",
+cliponaxis=False,
+hovertemplate=(
+"<b>%{y}</b><br>"
+"Percent annual energy: %{text:.2f}%<extra></extra>"
+),
+marker=dict(line=dict(color="#FCFCFA", width=1.2))
 )
+
+max_display = chart_df["Display Percent"].max()
+max_plot = transform_value(max_display) + 0.8
+
+fig.update_layout(
+width=1500,
+height=max(700, 32 * len(chart_df)),
+paper_bgcolor=PAPER_BG,
+plot_bgcolor=PLOT_BG,
+margin=dict(t=60, l=280, r=120, b=20),
+xaxis_title="Percent Annual Energy Demand in 2022 (%)",
+yaxis_title="Industrial Process",
+font=dict(
+family="Arial, sans-serif",
+color=TEXT_COLOR,
+size=14
+),
+shapes=[
+dict(
+type="line",
+x0=break_start + 0.35,
+x1=break_start + 0.55,
+y0=-0.5,
+y1=len(chart_df) - 0.5,
+xref="x",
+yref="y",
+line=dict(color="white", width=6)
+),
+dict(
+type="line",
+x0=break_start + 0.65,
+x1=break_start + 0.85,
+y0=-0.5,
+y1=len(chart_df) - 0.5,
+xref="x",
+yref="y",
+line=dict(color="white", width=6)
+)
+]
+)
+
+fig.update_xaxes(
+range=[0, max_plot + 0.8],
+tickmode="array",
+tickvals=[0, 1, 2, 3, 4, 5, 6, 7, break_start + compressed_gap],
+ticktext=["0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "21%"],
+showgrid=True,
+automargin=True
+)
+
+fig.update_yaxes(
+categoryorder="total ascending",
+automargin=True
+)
+
+return fig
+
+
+def build_sec_donut(fact_sheet: dict):
+donut_df = pd.DataFrame({
+"SEC Type": ["SEC Electricity", "SEC Fuels", "SEC Steam"],
+"Value": [
+fact_sheet["SEC Electricity"],
+fact_sheet["SEC Fuels"],
+fact_sheet["SEC Steam"]
+]
+})
+
+donut_df = donut_df[donut_df["Value"] > 0].copy()
+
+fig = px.pie(
+donut_df,
+names="SEC Type",
+values="Value",
+hole=0.62,
+color="SEC Type",
+color_discrete_map=SEC_COLOR_MAP
+)
+
+total_sec = donut_df["Value"].sum()
+
+fig.update_traces(
+textposition="outside",
+texttemplate="%{label}<br>%{percent}",
+hovertemplate=(
+"<b>%{label}</b><br>"
+"Value: %{value:.3f}<br>"
+"Share: %{percent}<extra></extra>"
+),
+marker=dict(line=dict(color="#FFFFFF", width=2))
+)
+
+fig.update_layout(
+height=360,
+margin=dict(t=20, l=20, r=20, b=20),
+paper_bgcolor=PAPER_BG,
+plot_bgcolor=PLOT_BG,
+showlegend=False,
+font=dict(
+family="Arial, sans-serif",
+color=TEXT_COLOR,
+size=13
+),
+annotations=[
+dict(
+text=f"<b>Total SEC (GJ/t)</b><br>{total_sec:.2f}",
+x=0.5,
+y=0.5,
+showarrow=False,
+font=dict(size=16, color=TEXT_COLOR)
+)
+]
+)
+
+return fig
+
+
+def build_fact_sheet(df: pd.DataFrame, selected_process: str):
+process_col = "Industrial process"
+unit_ops_col = "Unit operation (Level 3 classification; with details)"
+production_col = "Annual production in 2022\n(based on FU)"
+annual_energy_col = "Annual energy demand in 2022"
+elec_col = "SEC \nelectricity"
+fuel_col = "SEC \nfuels"
+steam_col = "SEC \nfuels or electricity for steam or steam from CHP"
+
+efficiency_col = "Efficiency"
+process_temp_col = "Process temperature"
+inlet_temp_col = "Inlet temperature"
+outlet_temp_col = "Outlet temperature"
+process_pressure_col = "Process pressure"
+inlet_pressure_col = "Inlet pressure"
+outlet_pressure_col = "Outlet pressure"
+residence_time_col = "Residence time"
+
+fact_df = df.copy()
+fact_df[process_col] = clean_category(fact_df[process_col])
+fact_df[unit_ops_col] = clean_category(fact_df[unit_ops_col])
+
+selected_df = fact_df[fact_df[process_col] == selected_process].copy()
+
+if selected_df.empty:
+return None
+
+for col in [
+production_col,
+annual_energy_col,
+elec_col,
+fuel_col,
+steam_col
+]:
+selected_df[col] = pd.to_numeric(selected_df[col], errors="coerce")
+
+production_values = (
+selected_df[production_col]
+.dropna()
+.loc[lambda s: s != 0]
+.unique()
+)
+annual_production = production_values[0] if len(production_values) > 0 else 0
+annual_energy = selected_df[annual_energy_col].fillna(0).sum()
+
+sec_electricity = selected_df[elec_col].fillna(0).sum()
+sec_fuels = selected_df[fuel_col].fillna(0).sum()
+sec_steam = selected_df[steam_col].fillna(0).sum()
+
+detail_df = selected_df[
+[
+unit_ops_col,
+elec_col,
+fuel_col,
+steam_col,
+efficiency_col,
+process_temp_col,
+inlet_temp_col,
+outlet_temp_col,
+process_pressure_col,
+inlet_pressure_col,
+outlet_pressure_col,
+residence_time_col
+]
+].rename(columns={
+unit_ops_col: "Unit Operations",
+elec_col: "SEC Electricity",
+fuel_col: "SEC Fuels",
+steam_col: "SEC Steam",
+efficiency_col: "Efficiency",
+        process_temp_col: "Process temperature",
+        inlet_temp_col: "Inlet temperature",
+        outlet_temp_col: "Outlet temperature",
+        process_temp_col: "Process temperature(°C)",
+        inlet_temp_col: "Inlet temperature(°C)",
+        outlet_temp_col: "Outlet temperature(°C)",
+process_pressure_col: "Process pressure",
+inlet_pressure_col: "Inlet pressure",
+outlet_pressure_col: "Outlet pressure",
+residence_time_col: "Residence time"
+})
+
+return {
+"Annual Production": annual_production,
+"Annual Energy": annual_energy,
+"SEC Electricity": sec_electricity,
+"SEC Fuels": sec_fuels,
+"SEC Steam": sec_steam,
+"Rows": selected_df.shape[0],
+"Details": detail_df
+}
+
+
+st.title("US Manufacturing Energy Classification: Industrial Process")
+
+try:
+df = load_excel(DATA_URL)
+bar_df = prepare_bar_data(df)
+
+left_col, right_col = st.columns([1.1, 1.6], gap="large")
+
+with left_col:
+selected_process = st.selectbox(
+"Select an industrial process to generate a fact sheet",
+bar_df["Industrial process"].tolist()
+)
+
+fact_sheet = build_fact_sheet(df, selected_process)
+
+if fact_sheet:
+c1, c2 = st.columns(2)
+c1.metric("Annual Production (tonne/yr)", f"{fact_sheet['Annual Production']:.2f}")
+c2.metric("Annual Energy (PJ/yr)", f"{fact_sheet['Annual Energy']:.2f}")
+
+st.subheader("Specific Energy Consumption (SEC)")
+st.plotly_chart(
+build_sec_donut(fact_sheet),
+use_container_width=True,
+theme=None,
+config={"displayModeBar": False}
+)
+
+st.dataframe(
+fact_sheet["Details"],
+use_container_width=True,
+hide_index=True
+)
+
+with right_col:
+st.subheader("Percent Annual Energy by Industrial Process")
+
+with st.container(height=1000):
+st.plotly_chart(
+build_bar_chart(bar_df),
+use_container_width=False,
+theme=None,
+config={
+"displayModeBar": False,
+"scrollZoom": False
+}
+)
+
+except Exception as e:
+st.error(f"App error: {e}")
