@@ -10,7 +10,7 @@ st.set_page_config(
     layout="wide"
 )
 
-file_url = "https://raw.githubusercontent.com/apatil210/LDRD/main/Figure1Data.xlsx"
+file_url = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Figure1Data.xlsx"
 
 base_color = "#0F766E"
 accent_color = "#0B5E55"
