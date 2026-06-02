@@ -5,7 +5,6 @@ st.set_page_config(page_title="Industrial Energy Modeling", layout="wide")
 st.markdown(
     """
     <style>
-    
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap');
 
     .stApp {
@@ -14,14 +13,12 @@ st.markdown(
 
     .block-container {
         max-width: 1280px;
-        padding-top: 3.5rem;
+        padding-top: 5rem;
         padding-bottom: 1.2rem;
         padding-left: 2rem;
         padding-right: 2rem;
     }
-.block-container {
-            padding-top: 5rem;
-        }
+
     .hero-title {
         font-family: 'Inter', sans-serif;
         font-size: clamp(1.6rem, 1.1rem + 1.2vw, 2.3rem);
@@ -48,6 +45,8 @@ st.markdown(
         line-height: 1.55;
         color: #1f2937;
         margin-bottom: 1.8rem;
+        text-align: justify;
+        text-justify: inter-word;
     }
 
     .contributors-title {
@@ -70,7 +69,7 @@ st.markdown(
         font-family: 'Inter', sans-serif;
         font-size: clamp(0.98rem, 0.94rem + 0.15vw, 1.12rem);
         color: #101828;
-        font-style: italic;
+        font-style: normal;
     }
 
     .nav-card {
@@ -84,12 +83,19 @@ st.markdown(
         line-height: 1.2;
         min-height: 88px;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 0.9rem 1rem;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         margin: 0.5rem auto 1rem auto;
         max-width: 240px;
+    }
+
+    .nav-subtext {
+        font-size: 0.9rem;
+        font-weight: 400;
+        margin-top: 0.25rem;
     }
 
     div[data-testid="column"] {
@@ -125,7 +131,7 @@ st.markdown(
 
 st.markdown(
     """
-    <div class="body-copy" style="text-align: justify;">
+    <div class="body-copy">
     The term 'industry' refers to a wide range of thermodynamic, mechanical, and chemical processes that transform materials, each involving distinct unit operations. While these processes vary in terms of the number, sequence, and type of unit operations, common operations such as drying, distillation, and compression are shared across sectors. However, the breakdown of industrial energy demand by these unit operations has remained poorly established. Moreover, industrial models at the level of unit operations are scarce. If developed, these models could ultimately serve as fundamental building blocks for system-level industrial process and facility design and optimization. Current frameworks such as the North American Industry Classification System (NAICS) categorize industrial activities based on what they produce (e.g., chemicals, food, metals), not how they use energy, creating silos of subsectors when conducting energy-related analyses. Our work developed a comprehensive analytical framework to analyze energy demand in industrial processes at the unit-operation level. The initial workflow involved gathering data for industrial processes representing nearly two-thirds of U.S. manufacturing and analyzing energy demand profiles by disaggregating these processes into unit operations. Clustering and ranking unit operations by energy demand to identify priority areas for technological advancements that offer the greatest competitive advantage. The overarching goal is to build a novel approach for characterizing US industrial sector, one that is based on unit operations.
     </div>
     """,
@@ -135,7 +141,15 @@ st.markdown(
 col1, col2, col3 = st.columns(3, gap="large")
 
 with col1:
-    st.markdown('<div class="nav-card">Industry Data</div>', unsafe_allow_html=True)
+    st.markdown(
+        '''
+        <div class="nav-card">
+            <div>Industry Data</div>
+            <div class="nav-subtext">[Click Here]</div>
+        </div>
+        ''',
+        unsafe_allow_html=True,
+    )
 
 with col2:
     st.markdown('<div class="nav-card">Unit Operation<br>Data</div>', unsafe_allow_html=True)
@@ -149,6 +163,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="contributors-affiliation" style="font-style: normal;">Lawrence Berkeley National Laboratory</div>',
+    '<div class="contributors-affiliation">Lawrence Berkeley National Laboratory</div>',
     unsafe_allow_html=True,
 )
