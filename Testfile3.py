@@ -1,398 +1,149 @@
 import streamlit as st
-import pandas as pd
-import requests
-from io import BytesIO
-import plotly.graph_objects as go
 
 st.set_page_config(
-    page_title="US Manufacturing Energy",
-    page_icon="⚙️",
+    page_title="Industrial Energy Modeling",
     layout="wide"
 )
 
-file_url = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Figure1Data.xlsx"
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap');
 
-base_color = "#0F766E"
-accent_color = "#0B5E55"
-stem_color = "#C7D2CF"
-bg_color = "#F4F7F6"
-card_color = "#FFFFFF"
-text_color = "#132A2E"
-muted_text = "#5B6B73"
-border_color = "rgba(19, 42, 46, 0.08)"
-
-st.markdown("""
-<style>
     .stApp {
-        background:
-            radial-gradient(circle at top left, rgba(15,118,110,0.06), transparent 28%),
-            linear-gradient(180deg, #F7FAF9 0%, #EEF4F2 100%);
+        background: #f2f2f2;
     }
 
     .block-container {
-        max-width: 1380px;
+        max-width: 1280px;
         padding-top: 2rem;
-        padding-bottom: 2.5rem;
+        padding-bottom: 3rem;
         padding-left: 2rem;
         padding-right: 2rem;
     }
 
-    .top-badge {
-        display: inline-block;
-        padding: 0.35rem 0.75rem;
-        border-radius: 999px;
-        background: rgba(15, 118, 110, 0.10);
-        border: 1px solid rgba(15, 118, 110, 0.12);
-        color: #0F766E;
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        margin-bottom: 0.9rem;
-    }
-
-    .hero-shell {
-        background: rgba(255,255,255,0.82);
-        border: 1px solid rgba(19, 42, 46, 0.07);
-        border-radius: 26px;
-        padding: 1.6rem 1.7rem 1.3rem 1.7rem;
-        box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
-        backdrop-filter: blur(8px);
-        margin-bottom: 1rem;
-    }
-
-    .hero-grid {
-        display: grid;
-        grid-template-columns: 1.6fr 0.9fr;
-        gap: 1rem;
-        align-items: end;
-    }
-
     .hero-title {
-        font-size: 2.35rem;
-        line-height: 1.05;
-        font-weight: 850;
-        letter-spacing: -0.03em;
-        color: #102A43;
-        margin: 0 0 0.45rem 0;
-    }
-
-    .hero-subtitle {
-        font-size: 1.02rem;
-        line-height: 1.55;
-        color: #52606D;
-        max-width: 62ch;
-        margin: 0;
-    }
-
-    .hero-note {
-        background: linear-gradient(180deg, #FBFDFC 0%, #F5F9F8 100%);
-        border: 1px solid rgba(15, 118, 110, 0.10);
-        border-radius: 20px;
-        padding: 1rem 1rem 0.9rem 1rem;
-    }
-
-    .hero-note-label {
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #0F766E;
-        font-weight: 700;
-        margin-bottom: 0.35rem;
-    }
-
-    .hero-note-text {
-        font-size: 0.96rem;
-        color: #48616A;
-        line-height: 1.5;
-        margin: 0;
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.4rem);
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        text-align: center;
+        color: #111111;
+        margin: 0 0 2.5rem 0;
     }
 
     .section-title {
-        font-size: 1.05rem;
-        font-weight: 750;
-        color: #17354A;
-        margin: 0.25rem 0 0.8rem 0.1rem;
-        letter-spacing: -0.01em;
-    }
-
-    .metric-row {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.9rem;
-        margin: 0.35rem 0 1.15rem 0;
-    }
-
-    .metric-card {
-        background: rgba(255,255,255,0.86);
-        border: 1px solid rgba(19, 42, 46, 0.07);
-        border-radius: 20px;
-        padding: 1rem 1rem 0.95rem 1rem;
-        box-shadow: 0 10px 24px rgba(16, 24, 40, 0.045);
-    }
-
-    .metric-label {
-        font-size: 0.82rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: #6B7C85;
-        margin-bottom: 0.45rem;
-        font-weight: 700;
-    }
-
-    .metric-value {
-        font-size: 1.55rem;
-        line-height: 1.1;
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(1.45rem, 1.1rem + 0.9vw, 2rem);
         font-weight: 800;
-        color: #102A43;
+        color: #111111;
+        margin-top: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .body-copy {
+        font-family: 'Source Serif 4', serif;
+        font-size: clamp(1.05rem, 0.98rem + 0.3vw, 1.18rem);
+        line-height: 1.65;
+        color: #262626;
+        text-align: left;
+        margin-bottom: 2.5rem;
+    }
+
+    .nav-card {
+        background: #2d658f;
+        border: 2px solid #1d4868;
+        color: white;
+        text-align: center;
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(1.1rem, 1rem + 0.5vw, 1.45rem);
+        font-weight: 500;
+        line-height: 1.2;
+        min-height: 92px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin: 0.5rem auto 2rem auto;
+        max-width: 220px;
+    }
+
+    .contributors-title {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(1.4rem, 1.05rem + 0.8vw, 1.9rem);
+        font-weight: 800;
+        color: #111111;
+        margin-top: 1.5rem;
         margin-bottom: 0.25rem;
     }
 
-    .metric-sub {
-        font-size: 0.92rem;
-        color: #5B6B73;
+    .contributors-names {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(1.2rem, 1rem + 0.7vw, 1.75rem);
+        line-height: 1.3;
+        color: #111111;
+        margin-bottom: 0.2rem;
     }
 
-    .chart-card {
-        background: rgba(255,255,255,0.92);
-        border: 1px solid rgba(19, 42, 46, 0.08);
-        border-radius: 24px;
-        padding: 1rem 1rem 0.7rem 1rem;
-        box-shadow: 0 14px 36px rgba(16, 24, 40, 0.055);
+    .contributors-affiliation {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(1.1rem, 0.95rem + 0.6vw, 1.55rem);
+        line-height: 1.3;
+        font-style: italic;
+        color: #111111;
     }
 
-    .chart-head {
+    div[data-testid="column"] {
         display: flex;
-        justify-content: space-between;
-        align-items: end;
-        gap: 1rem;
-        padding: 0.25rem 0.25rem 0.8rem 0.25rem;
+        justify-content: center;
     }
 
-    .chart-title {
-        font-size: 1.08rem;
-        font-weight: 800;
-        color: #17354A;
-        margin: 0;
-        letter-spacing: -0.01em;
-    }
-
-    .chart-caption {
-        font-size: 0.93rem;
-        color: #64748B;
-        margin: 0.15rem 0 0 0;
-    }
-
-    .chart-chip {
-        white-space: nowrap;
-        padding: 0.45rem 0.7rem;
-        border-radius: 999px;
-        background: #F2F7F6;
-        border: 1px solid rgba(15,118,110,0.08);
-        color: #33545B;
-        font-size: 0.82rem;
-        font-weight: 700;
-    }
-
-    [data-testid="stVerticalBlock"] div[style*="overflow"]::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-    }
-
-    [data-testid="stVerticalBlock"] div[style*="overflow"]::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #BFD0CC 0%, #8EAAA3 100%);
-        border-radius: 999px;
-    }
-
-    [data-testid="stVerticalBlock"] div[style*="overflow"]::-webkit-scrollbar-track {
-        background: #ECF2F0;
-        border-radius: 999px;
-    }
-
-    @media (max-width: 900px) {
-        .hero-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .metric-row {
-            grid-template-columns: 1fr;
-        }
-
-        .hero-title {
-            font-size: 1.8rem;
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 1rem;
+            padding-right: 1rem;
         }
     }
-</style>
-""", unsafe_allow_html=True)
-
-
-@st.cache_data
-def load_data(url):
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    return pd.read_excel(BytesIO(response.content), engine="openpyxl")
-
-
-try:
-    df = load_data(file_url)
-except Exception as e:
-    st.error(f"Failed to load Excel file: {e}")
-    st.stop()
-
-required_columns = {"Category", "Data"}
-if not required_columns.issubset(df.columns):
-    st.error(f"Excel file must contain these columns: {required_columns}")
-    st.write("Columns found:", list(df.columns))
-    st.stop()
-
-df_agg = (
-    df.groupby("Category", as_index=False)["Data"]
-      .sum()
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
-df_agg = df_agg[df_agg["Data"] > 0].copy()
-df_agg = df_agg.sort_values("Data", ascending=True).reset_index(drop=True)
-
-if df_agg.empty:
-    st.warning("No positive data values found after aggregation.")
-    st.stop()
-
-categories = df_agg["Category"]
-values = df_agg["Data"]
-
-top_category = df_agg.iloc[-1]["Category"]
-top_value = df_agg.iloc[-1]["Data"]
-total_categories = len(df_agg)
-avg_share = df_agg["Data"].mean()
-
-st.markdown(f"""
-<div class="hero-shell">
-    <div class="top-badge">Manufacturing energy profile</div>
-    <div class="hero-grid">
-        <div>
-            <div class="hero-title">US Manufacturing Energy by Unit Operation</div>
-            <p class="hero-subtitle">
-                A cleaner view of aggregated manufacturing energy use by category,
-                presented as a scrollable lollipop chart for easier comparison across
-                many unit operations.
-            </p>
-        </div>
-        <div class="hero-note">
-            <div class="hero-note-label">Reading guide</div>
-            <p class="hero-note-text">
-                Larger markers indicate a higher share of total energy use.
-                Scroll within the chart panel to explore the full ranked list.
-            </p>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown(f"""
-<div class="metric-row">
-    <div class="metric-card">
-        <div class="metric-label">Categories</div>
-        <div class="metric-value">{total_categories}</div>
-        <div class="metric-sub">Positive categories included after aggregation</div>
-    </div>
-    <div class="metric-card">
-        <div class="metric-label">Largest share</div>
-        <div class="metric-value">{top_value:.1%}</div>
-        <div class="metric-sub">{top_category}</div>
-    </div>
-    <div class="metric-card">
-        <div class="metric-label">Average share</div>
-        <div class="metric-value">{avg_share:.1%}</div>
-        <div class="metric-sub">Mean share across displayed categories</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-fig = go.Figure()
-
-for cat, val in zip(categories, values):
-    fig.add_shape(
-        type="line",
-        x0=0,
-        y0=cat,
-        x1=val,
-        y1=cat,
-        line=dict(color=stem_color, width=4)
-    )
-
-fig.add_trace(
-    go.Scatter(
-        x=values,
-        y=categories,
-        mode="markers+text",
-        text=[f"{v:.1%}" for v in values],
-        textposition="middle right",
-        textfont=dict(size=13, color=text_color),
-        marker=dict(
-            size=30,
-            color=base_color,
-            line=dict(color="white", width=2),
-            symbol="circle"
-        ),
-        hovertemplate="<b>%{y}</b><br>Share: %{x:.1%}<extra></extra>"
-    )
+st.markdown(
+    """
+    <div class="hero-title">Industrial Energy Modeling through Mapping Unit Operation Energy Demand</div>
+    """,
+    unsafe_allow_html=True,
 )
 
-chart_height = max(880, 38 * len(categories))
-
-fig.update_layout(
-    height=chart_height,
-    showlegend=False,
-    plot_bgcolor=card_color,
-    paper_bgcolor="rgba(0,0,0,0)",
-    margin=dict(t=20, b=30, l=240, r=130),
-    font=dict(size=13, color=text_color),
-    hoverlabel=dict(
-        bgcolor="white",
-        bordercolor="rgba(19,42,46,0.12)",
-        font=dict(color=text_color, size=13)
-    )
-)
-
-fig.update_xaxes(
-    title_text="Share of manufacturing energy use",
-    title_font=dict(size=13, color=muted_text),
-    tickformat=".0%",
-    tickfont=dict(size=12, color=muted_text),
-    showgrid=True,
-    gridcolor="#DCE6E3",
-    gridwidth=1,
-    zeroline=False,
-    automargin=True
-)
-
-fig.update_yaxes(
-    title_text="",
-    tickfont=dict(size=12, color=text_color),
-    automargin=True
-)
-
-st.markdown("""
-<div class="chart-card">
-    <div class="chart-head">
-        <div>
-            <div class="chart-title">Category shares</div>
-            <div class="chart-caption">
-                Ranked lollipop chart of aggregated energy shares by unit-operation category
-            </div>
-        </div>
-        <div class="chart-chip">Scrollable chart panel</div>
+st.markdown(
+    """
+    <div class="section-title">Project Statement</div>
+    <div class="body-copy">
+        The term 'industry' refers to a wide range of thermodynamic, mechanical, and chemical processes that transform materials, each involving distinct unit operations. While these processes vary in terms of the number, sequence, and type of unit operations, common operations such as drying, distillation, and compression are shared across sectors. However, the breakdown of industrial energy demand by these unit operations has remained poorly established. Moreover, industrial models at the level of unit operations are scarce. If developed, these models could ultimately serve as fundamental building blocks for system-level industrial process and facility design and optimization. Current frameworks such as the North American Industry Classification System (NAICS) categorize industrial activities based on what they produce (e.g., chemicals, food, metals), not how they use energy, creating silos of subsectors when conducting energy-related analyses. Our work developed a comprehensive analytical framework to analyze energy demand in industrial processes at the unit-operation level. The initial workflow involved gathering data for industrial processes representing nearly two-thirds of U.S. manufacturing and analyzing energy demand profiles by disaggregating these processes into unit operations. Clustering and ranking unit operations by energy demand to identify priority areas for technological advancements that offer the greatest competitive advantage. The overarching goal is to build a novel approach for characterizing US industrial sector, one that is based on unit operations.
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
-with st.container(height=720):
-    st.plotly_chart(
-        fig,
-        width="stretch",
-        key="scrollable_lollipop",
-        config={
-            "scrollZoom": False,
-            "displayModeBar": True
-        }
-    )
+col1, col2, col3 = st.columns(3, gap="large")
+
+with col1:
+    st.markdown("<div class='nav-card'>Industry Data</div>", unsafe_allow_html=True)
+
+with col2:
+    st.markdown("<div class='nav-card'>Unit Operation<br>Data</div>", unsafe_allow_html=True)
+
+with col3:
+    st.markdown("<div class='nav-card'>NAICS Sector<br>Coverage</div>", unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <div class="contributors-title">Contributors:</div>
+    <div class="contributors-names">Akash Patil, M. Jibran S. Zuberi, Prakash Rao, Unique Karki</div>
+    <div class="contributors-affiliation">Lawrence Berkeley National Laboratory, Berkeley, CA 94720</div>
+    """,
+    unsafe_allow_html=True,
+)
