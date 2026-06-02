@@ -291,7 +291,7 @@ def build_bar_chart(df: pd.DataFrame):
     )
 
     fig.update_traces(
-        texttemplate="%{text:.4f}%",
+        texttemplate="%{text:.1f}%",
         textposition="outside",
         cliponaxis=False,
         hovertemplate=(
