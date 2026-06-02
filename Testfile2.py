@@ -2,10 +2,14 @@ from io import BytesIO
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
 import requests
 import streamlit as st
 
+# ----------------------------
+# App configuration
+# ----------------------------
 st.set_page_config(
     page_title="US Manufacturing Energy Classification",
     layout="wide"
@@ -27,6 +31,10 @@ SEC_COLOR_MAP = {
     "SEC Steam": "#4C78A8",
 }
 
+# ----------------------------
+# Canonical column names
+# These match the attached workbook
+# ----------------------------
 COL_L2 = "Unit operation Level 2 classification"
 COL_L3 = "Unit operation Level 3 classification with details"
 COL_PERCENT_ENERGY = "Percent Annual energy demand in 2022"
@@ -48,6 +56,65 @@ COL_OUTLET_PRESSURE = "Outlet pressure"
 COL_RESIDENCE_TIME = "Residence time"
 
 
+# ----------------------------
+# Utility functions
+# ----------------------------
+def normalize_text(value) -> str:
+    if pd.isna(value):
+        return ""
+    return (
+        str(value)
+        .replace("\n", " ")
+        .replace("\r", " ")
+        .strip()
+    )
+
+
+def clean_category(series: pd.Series) -> pd.Series:
+    s = series.astype(str).str.strip()
+    return s.replace({
+        "": "Unknown",
+        "nan": "Unknown",
+        "None": "Unknown"
+    })
+
+
+def to_numeric_safe(series: pd.Series) -> pd.Series:
+    return pd.to_numeric(series, errors="coerce")
+
+
+def find_header_row(raw_df: pd.DataFrame, required_headers: list[str]) -> int:
+    normalized_required = {normalize_text(x) for x in required_headers}
+
+    for i in range(min(10, len(raw_df))):
+        row_values = {normalize_text(v) for v in raw_df.iloc[i].tolist()}
+        if normalized_required.issubset(row_values):
+            return i
+
+    raise ValueError(
+        "Could not locate the header row containing the expected column names."
+    )
+
+
+def make_unique_columns(columns: list[str]) -> list[str]:
+    seen = {}
+    result = []
+
+    for col in columns:
+        base = normalize_text(col) or "Unnamed"
+        if base not in seen:
+            seen[base] = 0
+            result.append(base)
+        else:
+            seen[base] += 1
+            result.append(f"{base}_{seen[base]}")
+
+    return result
+
+
+# ----------------------------
+# Data loading
+# ----------------------------
 @st.cache_data(show_spinner=False)
 def load_excel_data(url: str) -> pd.DataFrame:
     response = requests.get(url, timeout=30)
@@ -64,33 +131,47 @@ def load_excel_data(url: str) -> pd.DataFrame:
         engine="openpyxl"
     )
 
-    header_row_idx = 1
-    data_start_row = header_row_idx + 2
+    header_row_idx = find_header_row(
+        raw_df,
+        required_headers=[
+            COL_L2,
+            COL_L3,
+            COL_PERCENT_ENERGY,
+            COL_ANNUAL_PRODUCTION,
+            COL_ANNUAL_ENERGY,
+            COL_SEC_ELECTRICITY,
+            COL_SEC_FUELS,
+            COL_SEC_STEAM,
+        ]
+    )
 
-    df = raw_df.iloc[data_start_row:].copy()
-    df.columns = raw_df.iloc[header_row_idx].astype(str).str.strip()
+    df = raw_df.iloc[header_row_idx + 2:].copy()
+    df.columns = make_unique_columns(raw_df.iloc[header_row_idx].tolist())
     df = df.reset_index(drop=True)
 
-    df.columns = [str(c).replace("\n", " ").strip() for c in df.columns]
+    df = df.dropna(how="all")
+    df.columns = [normalize_text(c) for c in df.columns]
+
+    required_cols = [
+        COL_L2,
+        COL_L3,
+        COL_PERCENT_ENERGY,
+        COL_ANNUAL_PRODUCTION,
+        COL_ANNUAL_ENERGY,
+        COL_SEC_ELECTRICITY,
+        COL_SEC_FUELS,
+        COL_SEC_STEAM,
+    ]
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing expected columns: {missing}")
+
     return df
 
 
-def clean_category(series: pd.Series) -> pd.Series:
-    return (
-        series.astype(str)
-        .str.strip()
-        .replace({
-            "": "Unknown",
-            "nan": "Unknown",
-            "None": "Unknown"
-        })
-    )
-
-
-def to_numeric_safe(series: pd.Series) -> pd.Series:
-    return pd.to_numeric(series, errors="coerce")
-
-
+# ----------------------------
+# Data preparation
+# ----------------------------
 def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
     working_df = df[[COL_L2, COL_PERCENT_ENERGY]].copy()
 
@@ -104,8 +185,11 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index(drop=True)
     )
 
-    grouped_df = grouped_df[grouped_df[COL_PERCENT_ENERGY] > 0].copy()
     grouped_df["Display Percent"] = grouped_df[COL_PERCENT_ENERGY] * 100
+    grouped_df["Abs Display Percent"] = grouped_df["Display Percent"].abs()
+    grouped_df["Sign"] = grouped_df["Display Percent"].apply(
+        lambda x: "Positive" if x >= 0 else "Negative"
+    )
     grouped_df["Rank"] = range(1, len(grouped_df) + 1)
 
     return grouped_df
@@ -129,7 +213,6 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
         COL_SEC_FUELS,
         COL_SEC_STEAM,
     ]
-
     for col in numeric_cols:
         selected_df[col] = to_numeric_safe(selected_df[col])
 
@@ -147,7 +230,7 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     sec_fuels = selected_df[COL_SEC_FUELS].fillna(0).sum()
     sec_steam = selected_df[COL_SEC_STEAM].fillna(0).sum()
 
-    detail_columns = [
+    detail_cols = [
         COL_L3,
         COL_SEC_ELECTRICITY,
         COL_SEC_FUELS,
@@ -161,8 +244,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
         COL_OUTLET_PRESSURE,
         COL_RESIDENCE_TIME,
     ]
+    detail_cols = [c for c in detail_cols if c in selected_df.columns]
 
-    detail_df = selected_df[detail_columns].rename(columns={
+    detail_df = selected_df[detail_cols].rename(columns={
         COL_L3: "Unit Operations",
         COL_SEC_ELECTRICITY: "SEC Electricity",
         COL_SEC_FUELS: "SEC Fuels",
@@ -188,41 +272,38 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     }
 
 
+# ----------------------------
+# Chart builders
+# ----------------------------
 def build_bar_chart(df: pd.DataFrame):
-    break_start = 8.0
-    break_end = 21.0
-    compressed_gap = 1.2
-
-    def transform_value(x):
-        if x <= break_start:
-            return x
-        return break_start + compressed_gap + (x - break_end)
-
     chart_df = df.copy()
-    chart_df["Plot Value"] = chart_df["Display Percent"].apply(transform_value)
+    chart_df = chart_df.sort_values("Display Percent", ascending=True)
+
+    max_abs = max(chart_df["Display Percent"].abs().max(), 1)
 
     fig = px.bar(
         chart_df,
-        x="Plot Value",
+        x="Display Percent",
         y=COL_L2,
         orientation="h",
-        text="Display Percent",
-        color_discrete_sequence=[BAR_COLOR]
+        color="Sign",
+        color_discrete_map={
+            "Positive": BAR_COLOR,
+            "Negative": "#B22222"
+        },
+        text="Display Percent"
     )
 
     fig.update_traces(
-        texttemplate="%{text:.1f}%",
+        texttemplate="%{text:.2f}%",
         textposition="outside",
         cliponaxis=False,
         hovertemplate=(
             "<b>%{y}</b><br>"
-            "Percent annual energy: %{text:.2f}%<extra></extra>"
+            "Percent annual energy: %{x:.4f}%<extra></extra>"
         ),
-        marker=dict(line=dict(color="#FCFCFA", width=1.2))
+        marker=dict(line=dict(color="#FCFCFA", width=1.0))
     )
-
-    max_display = chart_df["Display Percent"].max()
-    max_plot = transform_value(max_display) + 0.8
 
     fig.update_layout(
         width=1500,
@@ -237,41 +318,20 @@ def build_bar_chart(df: pd.DataFrame):
             color=TEXT_COLOR,
             size=14
         ),
-        shapes=[
-            dict(
-                type="line",
-                x0=break_start + 0.35,
-                x1=break_start + 0.55,
-                y0=-0.5,
-                y1=len(chart_df) - 0.5,
-                xref="x",
-                yref="y",
-                line=dict(color="white", width=6)
-            ),
-            dict(
-                type="line",
-                x0=break_start + 0.65,
-                x1=break_start + 0.85,
-                y0=-0.5,
-                y1=len(chart_df) - 0.5,
-                xref="x",
-                yref="y",
-                line=dict(color="white", width=6)
-            )
-        ]
+        legend_title_text="Contribution",
     )
 
     fig.update_xaxes(
-        range=[0, max_plot + 0.8],
-        tickmode="array",
-        tickvals=[0, 1, 2, 3, 4, 5, 6, 7, break_start + compressed_gap],
-        ticktext=["0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "21%"],
+        range=[-max_abs * 1.15, max_abs * 1.15],
+        ticksuffix="%",
+        zeroline=True,
+        zerolinewidth=1.2,
+        zerolinecolor="#666",
         showgrid=True,
         automargin=True
     )
 
     fig.update_yaxes(
-        categoryorder="total ascending",
         automargin=True
     )
 
@@ -288,15 +348,27 @@ def build_sec_donut(fact_sheet: dict):
         ]
     })
 
-    donut_df = donut_df[donut_df["Value"] > 0].copy()
+    donut_df["Abs Value"] = donut_df["Value"].abs()
+    donut_df = donut_df[donut_df["Abs Value"] > 0].copy()
 
     if donut_df.empty:
-        return None
+        fig = go.Figure()
+        fig.update_layout(
+            height=360,
+            paper_bgcolor=PAPER_BG,
+            plot_bgcolor=PLOT_BG,
+            annotations=[dict(
+                text="No SEC values available",
+                x=0.5, y=0.5, showarrow=False,
+                font=dict(size=16, color=TEXT_COLOR)
+            )]
+        )
+        return fig
 
     fig = px.pie(
         donut_df,
         names="SEC Type",
-        values="Value",
+        values="Abs Value",
         hole=0.62,
         color="SEC Type",
         color_discrete_map=SEC_COLOR_MAP
@@ -309,8 +381,7 @@ def build_sec_donut(fact_sheet: dict):
         texttemplate="%{label}<br>%{percent}",
         hovertemplate=(
             "<b>%{label}</b><br>"
-            "Value: %{value:.3f}<br>"
-            "Share: %{percent}<extra></extra>"
+            "Absolute value: %{value:.3f}<extra></extra>"
         ),
         marker=dict(line=dict(color="#FFFFFF", width=2))
     )
@@ -328,7 +399,7 @@ def build_sec_donut(fact_sheet: dict):
         ),
         annotations=[
             dict(
-                text=f"<b>Total SEC (GJ/t)</b><br>{total_sec:.2f}",
+                text=f"<b>Total SEC</b><br>{total_sec:.2f}",
                 x=0.5,
                 y=0.5,
                 showarrow=False,
@@ -340,6 +411,9 @@ def build_sec_donut(fact_sheet: dict):
     return fig
 
 
+# ----------------------------
+# App UI
+# ----------------------------
 st.title("US Manufacturing Energy Classification: Unit Operations")
 
 try:
@@ -351,36 +425,29 @@ try:
     with left_col:
         selected_l2 = st.selectbox(
             "Select a unit operation (Level 2 classification) to generate a fact sheet",
-            bar_df[COL_L2].tolist()
+            sorted(bar_df[COL_L2].dropna().unique().tolist())
         )
 
         fact_sheet = build_fact_sheet(df, selected_l2)
 
         if fact_sheet is not None:
             metric_col1, metric_col2 = st.columns(2)
-
             metric_col1.metric(
-                "Annual Production",
-                f"{fact_sheet['Annual Production']:.2f}"
+                "Annual Production (based on FU)",
+                f"{fact_sheet['Annual Production']:,.2f}"
             )
-
             metric_col2.metric(
                 "Annual Energy (PJ/yr)",
-                f"{fact_sheet['Annual Energy']:.2f}"
+                f"{fact_sheet['Annual Energy']:,.2f}"
             )
 
             st.subheader("Specific Energy Consumption (SEC)")
-            sec_fig = build_sec_donut(fact_sheet)
-
-            if sec_fig is not None:
-                st.plotly_chart(
-                    sec_fig,
-                    use_container_width=True,
-                    theme=None,
-                    config={"displayModeBar": False}
-                )
-            else:
-                st.info("No positive SEC values available for this category.")
+            st.plotly_chart(
+                build_sec_donut(fact_sheet),
+                use_container_width=True,
+                theme=None,
+                config={"displayModeBar": False}
+            )
 
             st.dataframe(
                 fact_sheet["Details"],
@@ -390,6 +457,7 @@ try:
 
     with right_col:
         st.subheader("Percent Annual Energy by Unit Operation (Level 2)")
+        st.caption("Negative values indicate net recovery/export effects in some categories.")
 
         with st.container(height=1000):
             st.plotly_chart(
