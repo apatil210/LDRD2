@@ -301,17 +301,7 @@ try:
         fact_sheet = build_fact_sheet(df, selected_process)
 
         if fact_sheet:
-            st.subheader(f"Fact Sheet: {selected_process}")
-st.markdown("""
-            <style>
-            div[data-testid="stMetricLabel"] p {
-                font-size: 20px !important;
-                font-weight: 700 !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-</style>
-""", unsafe_allow_html=True)
+            
             c1, c2 = st.columns(2)
             c1.metric("Annual Production (tonne/yr)", f"{fact_sheet['Annual Production']:.2f}")
             c2.metric("Annual Energy (PJ/yr)", f"{fact_sheet['Annual Energy']:.2f}")
