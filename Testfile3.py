@@ -125,7 +125,7 @@ st.markdown(
 
 st.markdown(
     """
-    <div class="body-copy">
+    <div class="body-copy" style="text-align: justify;">
     The term 'industry' refers to a wide range of thermodynamic, mechanical, and chemical processes that transform materials, each involving distinct unit operations. While these processes vary in terms of the number, sequence, and type of unit operations, common operations such as drying, distillation, and compression are shared across sectors. However, the breakdown of industrial energy demand by these unit operations has remained poorly established. Moreover, industrial models at the level of unit operations are scarce. If developed, these models could ultimately serve as fundamental building blocks for system-level industrial process and facility design and optimization. Current frameworks such as the North American Industry Classification System (NAICS) categorize industrial activities based on what they produce (e.g., chemicals, food, metals), not how they use energy, creating silos of subsectors when conducting energy-related analyses. Our work developed a comprehensive analytical framework to analyze energy demand in industrial processes at the unit-operation level. The initial workflow involved gathering data for industrial processes representing nearly two-thirds of U.S. manufacturing and analyzing energy demand profiles by disaggregating these processes into unit operations. Clustering and ranking unit operations by energy demand to identify priority areas for technological advancements that offer the greatest competitive advantage. The overarching goal is to build a novel approach for characterizing US industrial sector, one that is based on unit operations.
     </div>
     """,
