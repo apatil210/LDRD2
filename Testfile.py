@@ -308,7 +308,7 @@ try:
 
             st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
 
-            st.subheader("SEC Composition")
+            st.subheader("Specific Energy Consumption (SEC) Composition")
             st.plotly_chart(
                 build_sec_donut(fact_sheet),
                 use_container_width=True,
