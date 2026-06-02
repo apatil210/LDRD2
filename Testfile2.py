@@ -284,7 +284,7 @@ def build_bar_chart(df: pd.DataFrame):
     fig = px.bar(
         chart_df,
         x="Display Percent",
-        y="Unit operation (Level 2 classification)",
+        y="Unit Operation Classification",
         orientation="h",
         text="Display Percent",
         color_discrete_sequence=[BAR_COLOR]
