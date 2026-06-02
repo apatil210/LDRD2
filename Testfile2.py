@@ -320,7 +320,7 @@ def build_fact_sheet(df: pd.DataFrame, selected_unit_op_l2: str):
     }
 
 
-st.title("US Manufacturing Energy Classification: Unit Operation (Level 2)")
+st.title("US Manufacturing Energy Classification: Unit Operations")
 
 try:
     df = load_excel(DATA_URL)
