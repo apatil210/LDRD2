@@ -9,7 +9,7 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap');
 
     .stApp {
-        background: #f2f2f2;
+        background: white;
     }
 
     .block-container {
