@@ -31,27 +31,27 @@ SEC_COLOR_MAP = {
 }
 
 # ----------------------------
-# Canonical column names
+# Canonical column names used in code
 # ----------------------------
-COL_L2 = "Unit operation Level 2 classification"
-COL_L3 = "Unit operation Level 3 classification with details"
-COL_PERCENT_ENERGY = "Percent Annual energy demand in 2022"
+COL_L2 = "L2"
+COL_L3 = "L3"
+COL_PERCENT_ENERGY = "PERCENT_ENERGY"
 
-COL_ANNUAL_PRODUCTION = "Annual production in 2022 based on FU"
-COL_ANNUAL_ENERGY = "Annual energy demand in 2022"
+COL_ANNUAL_PRODUCTION = "ANNUAL_PRODUCTION"
+COL_ANNUAL_ENERGY = "ANNUAL_ENERGY"
 
-COL_SEC_ELECTRICITY = "SEC electricity"
-COL_SEC_FUELS = "SEC fuels"
-COL_SEC_STEAM = "SEC fuels or electricity for steam or steam from CHP"
+COL_SEC_ELECTRICITY = "SEC_ELECTRICITY"
+COL_SEC_FUELS = "SEC_FUELS"
+COL_SEC_STEAM = "SEC_STEAM"
 
-COL_EFFICIENCY = "Efficiency"
-COL_PROCESS_TEMP = "Process temperature"
-COL_INLET_TEMP = "Inlet temperature"
-COL_OUTLET_TEMP = "Outlet temperature"
-COL_PROCESS_PRESSURE = "Process pressure"
-COL_INLET_PRESSURE = "Inlet pressure"
-COL_OUTLET_PRESSURE = "Outlet pressure"
-COL_RESIDENCE_TIME = "Residence time"
+COL_EFFICIENCY = "EFFICIENCY"
+COL_PROCESS_TEMP = "PROCESS_TEMP"
+COL_INLET_TEMP = "INLET_TEMP"
+COL_OUTLET_TEMP = "OUTLET_TEMP"
+COL_PROCESS_PRESSURE = "PROCESS_PRESSURE"
+COL_INLET_PRESSURE = "INLET_PRESSURE"
+COL_OUTLET_PRESSURE = "OUTLET_PRESSURE"
+COL_RESIDENCE_TIME = "RESIDENCE_TIME"
 
 
 # ----------------------------
@@ -64,8 +64,17 @@ def normalize_text(value) -> str:
         str(value)
         .replace("\n", " ")
         .replace("\r", " ")
+        .replace("\xa0", " ")
         .strip()
     )
+
+
+def simplify_header(value: str) -> str:
+    value = normalize_text(value).lower()
+    for ch in ["(", ")", ";", "/", "-", "%"]:
+        value = value.replace(ch, " ")
+    value = " ".join(value.split())
+    return value
 
 
 def clean_category(series: pd.Series) -> pd.Series:
@@ -85,42 +94,69 @@ def to_numeric_safe(series: pd.Series) -> pd.Series:
 
 
 def rename_columns_flexibly(df: pd.DataFrame) -> pd.DataFrame:
+    alias_map = {
+        COL_L2: {
+            "unit operation level 2 classification",
+            "unit operation level 2 classification ",
+            "unit operation level 2 classification"
+        },
+        COL_L3: {
+            "unit operation level 3 classification with details",
+            "unit operation level 3 classification with details ",
+            "unit operation level 3 classification with details",
+            "unit operation level 3 classification with details"
+        },
+        COL_PERCENT_ENERGY: {
+            "percent annual energy demand in 2022"
+        },
+        COL_ANNUAL_PRODUCTION: {
+            "annual production in 2022 based on fu"
+        },
+        COL_ANNUAL_ENERGY: {
+            "annual energy demand in 2022"
+        },
+        COL_SEC_ELECTRICITY: {
+            "sec electricity"
+        },
+        COL_SEC_FUELS: {
+            "sec fuels"
+        },
+        COL_SEC_STEAM: {
+            "sec fuels or electricity for steam or steam from chp"
+        },
+        COL_EFFICIENCY: {
+            "efficiency"
+        },
+        COL_PROCESS_TEMP: {
+            "process temperature"
+        },
+        COL_INLET_TEMP: {
+            "inlet temperature"
+        },
+        COL_OUTLET_TEMP: {
+            "outlet temperature"
+        },
+        COL_PROCESS_PRESSURE: {
+            "process pressure"
+        },
+        COL_INLET_PRESSURE: {
+            "inlet pressure"
+        },
+        COL_OUTLET_PRESSURE: {
+            "outlet pressure"
+        },
+        COL_RESIDENCE_TIME: {
+            "residence time"
+        },
+    }
+
     rename_map = {}
     for col in df.columns:
-        norm = normalize_text(col)
-
-        if norm == "Unit operation Level 2 classification":
-            rename_map[col] = COL_L2
-        elif norm == "Unit operation Level 3 classification with details":
-            rename_map[col] = COL_L3
-        elif norm == "Percent Annual energy demand in 2022":
-            rename_map[col] = COL_PERCENT_ENERGY
-        elif norm == "Annual production in 2022 based on FU":
-            rename_map[col] = COL_ANNUAL_PRODUCTION
-        elif norm == "Annual energy demand in 2022":
-            rename_map[col] = COL_ANNUAL_ENERGY
-        elif norm == "SEC electricity":
-            rename_map[col] = COL_SEC_ELECTRICITY
-        elif norm == "SEC fuels":
-            rename_map[col] = COL_SEC_FUELS
-        elif norm == "SEC fuels or electricity for steam or steam from CHP":
-            rename_map[col] = COL_SEC_STEAM
-        elif norm == "Efficiency":
-            rename_map[col] = COL_EFFICIENCY
-        elif norm == "Process temperature":
-            rename_map[col] = COL_PROCESS_TEMP
-        elif norm == "Inlet temperature":
-            rename_map[col] = COL_INLET_TEMP
-        elif norm == "Outlet temperature":
-            rename_map[col] = COL_OUTLET_TEMP
-        elif norm == "Process pressure":
-            rename_map[col] = COL_PROCESS_PRESSURE
-        elif norm == "Inlet pressure":
-            rename_map[col] = COL_INLET_PRESSURE
-        elif norm == "Outlet pressure":
-            rename_map[col] = COL_OUTLET_PRESSURE
-        elif norm == "Residence time":
-            rename_map[col] = COL_RESIDENCE_TIME
+        simplified = simplify_header(col)
+        for canonical, aliases in alias_map.items():
+            if simplified in aliases:
+                rename_map[col] = canonical
+                break
 
     return df.rename(columns=rename_map)
 
@@ -144,9 +180,15 @@ def load_excel_data(url: str) -> pd.DataFrame:
         engine="openpyxl"
     )
 
+    # The workbook preview shows:
+    # row 0 = grouped section labels
+    # row 1 = actual field names
+    # row 2 = units
+    # row 3 onward = data
     header_row_idx = 1
+    data_start_idx = 3
 
-    df = raw_df.iloc[header_row_idx + 2:].copy()
+    df = raw_df.iloc[data_start_idx:].copy()
     df.columns = raw_df.iloc[header_row_idx].map(normalize_text)
     df = df.reset_index(drop=True)
     df = rename_columns_flexibly(df)
@@ -154,7 +196,10 @@ def load_excel_data(url: str) -> pd.DataFrame:
     required_cols = [COL_L2, COL_PERCENT_ENERGY]
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
-        raise ValueError(f"Missing required columns: {missing}")
+        raise ValueError(
+            f"Missing required columns after header mapping: {missing}. "
+            f"Detected columns: {list(df.columns)}"
+        )
 
     return df
 
@@ -163,6 +208,7 @@ def load_excel_data(url: str) -> pd.DataFrame:
 # Data preparation
 # ----------------------------
 def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
+    # Right chart: Column D vs Column AG by header meaning
     working_df = df[[COL_L2, COL_PERCENT_ENERGY]].copy()
 
     working_df[COL_L2] = clean_category(working_df[COL_L2])
@@ -184,13 +230,11 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
 
 def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     fact_df = df.copy()
-
     fact_df[COL_L2] = clean_category(fact_df[COL_L2])
 
-    if COL_L3 in fact_df.columns:
-        fact_df[COL_L3] = clean_category(fact_df[COL_L3])
-    else:
+    if COL_L3 not in fact_df.columns:
         fact_df[COL_L3] = "Unknown"
+    fact_df[COL_L3] = clean_category(fact_df[COL_L3])
 
     selected_df = fact_df[fact_df[COL_L2] == selected_l2].copy()
 
@@ -219,6 +263,7 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
 
     annual_production = production_values[0] if len(production_values) > 0 else 0
     annual_energy = selected_df[COL_ANNUAL_ENERGY].fillna(0).sum()
+
     sec_electricity = selected_df[COL_SEC_ELECTRICITY].fillna(0).sum()
     sec_fuels = selected_df[COL_SEC_FUELS].fillna(0).sum()
     sec_steam = selected_df[COL_SEC_STEAM].fillna(0).sum()
@@ -381,8 +426,10 @@ def build_sec_donut(fact_sheet: dict):
             "Value": [1]
         })
         color_map = {"No SEC data": "#B8C4CC"}
+        center_text = "No SEC data"
     else:
         color_map = SEC_COLOR_MAP
+        center_text = f"<b>Total SEC</b><br>{donut_df['Value'].sum():.2f}"
 
     fig = px.pie(
         donut_df,
@@ -392,8 +439,6 @@ def build_sec_donut(fact_sheet: dict):
         color="SEC Type",
         color_discrete_map=color_map
     )
-
-    total_sec = donut_df["Value"].sum()
 
     fig.update_traces(
         textposition="outside",
@@ -419,7 +464,7 @@ def build_sec_donut(fact_sheet: dict):
         ),
         annotations=[
             dict(
-                text=f"<b>Total SEC</b><br>{total_sec:.2f}",
+                text=center_text,
                 x=0.5,
                 y=0.5,
                 showarrow=False,
