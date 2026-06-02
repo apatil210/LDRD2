@@ -303,11 +303,13 @@ try:
         if fact_sheet:
             st.subheader(f"Fact Sheet: {selected_process}")
 st.markdown("""
-<style>
-div[data-testid="stMetricLabel"] p {
-    font-size: 20px !important;
-    font-weight: 700 !important;
-}
+            <style>
+            div[data-testid="stMetricLabel"] p {
+                font-size: 20px !important;
+                font-weight: 700 !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
 </style>
 """, unsafe_allow_html=True)
             c1, c2 = st.columns(2)
