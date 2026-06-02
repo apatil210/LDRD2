@@ -72,50 +72,42 @@ st.markdown(
         font-style: normal;
     }
 
-    .nav-link {
-        text-decoration: none;
-        display: block;
-        width: 100%;
+    div[data-testid="column"] {
+        display: flex;
+        justify-content: center;
     }
 
-    .nav-card {
+    .stButton > button {
         background: #2d658f;
         border: 2px solid #1d4868;
         color: white;
         text-align: center;
         font-family: 'Inter', sans-serif;
-        font-size: clamp(1rem, 0.95rem + 0.2vw, 1.3rem);
-        font-weight: 500;
+        font-size: clamp(1rem, 0.95rem + 0.2vw, 1.2rem);
+        font-weight: 600;
         line-height: 1.2;
         min-height: 88px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 0.9rem 1rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        margin: 0.5rem auto 1rem auto;
-        max-width: 240px;
+        width: 100%;
         border-radius: 6px;
-        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
 
-    .nav-card:hover {
+    .stButton > button:hover {
         background: #245676;
+        color: white;
+        border-color: #1d4868;
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
         transform: translateY(-2px);
     }
 
-    .nav-subtext {
-        font-size: 0.9rem;
-        font-weight: 400;
-        margin-top: 0.25rem;
-    }
-
-    div[data-testid="column"] {
-        display: flex;
-        justify-content: center;
+    .card-subtext {
+        text-align: center;
+        font-family: 'Inter', sans-serif;
+        color: #4b5563;
+        margin-top: -0.45rem;
+        margin-bottom: 0.8rem;
+        font-size: 0.92rem;
     }
 
     @media (max-width: 768px) {
@@ -156,37 +148,17 @@ st.markdown(
 col1, col2, col3 = st.columns(3, gap="large")
 
 with col1:
-    st.markdown(
-        '''
-        <a class="nav-link" href="https://testfilepy-adgzkwgrpeml8ungt35ls7.streamlit.app/" target="_self">
-            <div class="nav-card">
-                <div>Industry Data</div>
-                <div class="nav-subtext">[Click Here]</div>
-            </div>
-        </a>
-        ''',
-        unsafe_allow_html=True,
-    )
+    if st.button("Industry Data", use_container_width=True):
+        st.switch_page("pages/industry_data.py")
+    st.markdown('<div class="card-subtext">[Click Here]</div>', unsafe_allow_html=True)
 
 with col2:
-    st.markdown(
-        '''
-        <div class="nav-card">
-            <div>Unit Operation<br>Data</div>
-        </div>
-        ''',
-        unsafe_allow_html=True,
-    )
+    st.button("Unit Operation Data", use_container_width=True, disabled=True)
+    st.markdown('<div class="card-subtext">Coming soon</div>', unsafe_allow_html=True)
 
 with col3:
-    st.markdown(
-        '''
-        <div class="nav-card">
-            <div>NAICS Sector<br>Coverage</div>
-        </div>
-        ''',
-        unsafe_allow_html=True,
-    )
+    st.button("NAICS Sector Coverage", use_container_width=True, disabled=True)
+    st.markdown('<div class="card-subtext">Coming soon</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="contributors-title">Contributors:</div>', unsafe_allow_html=True)
 st.markdown(
