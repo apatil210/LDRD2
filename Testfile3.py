@@ -5,9 +5,7 @@ st.set_page_config(page_title="Industrial Energy Modeling", layout="wide")
 st.markdown(
     """
     <style>
-    .block-container {
-            padding-top: 5rem;
-        }
+    
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&display=swap');
 
     .stApp {
@@ -21,7 +19,9 @@ st.markdown(
         padding-left: 2rem;
         padding-right: 2rem;
     }
-
+.block-container {
+            padding-top: 5rem;
+        }
     .hero-title {
         font-family: 'Inter', sans-serif;
         font-size: clamp(1.6rem, 1.1rem + 1.2vw, 2.3rem);
