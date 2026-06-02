@@ -296,17 +296,17 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
         ]
     ].rename(columns={
         unit_ops_col: "Unit Operations",
-        elec_col: "SEC Electricity",
-        fuel_col: "SEC Fuels",
-        steam_col: "SEC Steam",
-        efficiency_col: "Efficiency",
-        process_temp_col: "Process temperature(°C)",
-        inlet_temp_col: "Inlet temperature(°C)",
-        outlet_temp_col: "Outlet temperature(°C)",
-        process_pressure_col: "Process pressure",
-        inlet_pressure_col: "Inlet pressure",
-        outlet_pressure_col: "Outlet pressure",
-        residence_time_col: "Residence time"
+        elec_col: "SEC Electricity (GJ/t)",
+        fuel_col: "SEC Fuels (GJ/t)",
+        steam_col: "SEC Steam (GJ/t)",
+        efficiency_col: "Efficiency (%)",
+        process_temp_col: "Process temperature (°C)",
+        inlet_temp_col: "Inlet temperature (°C)",
+        outlet_temp_col: "Outlet temperature (°C)",
+        process_pressure_col: "Process pressure (bar)",
+        inlet_pressure_col: "Inlet pressure (bar)",
+        outlet_pressure_col: "Outlet pressure (bar)",
+        residence_time_col: "Residence time (sec)"
     })
 
     return {
