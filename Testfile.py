@@ -239,13 +239,13 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     steam_col = "SEC \nfuels or electricity for steam or steam from CHP"
 
     efficiency_col = "Efficiency"
-    process_temp_col = "Process temperature(°C)"
-    inlet_temp_col = "Inlet temperature(°C)"
-    outlet_temp_col = "Outlet temperature(°C)"
-    process_pressure_col = "Process pressure(bar)"
-    inlet_pressure_col = "Inlet pressure(bar)"
-    outlet_pressure_col = "Outlet pressure(bar)"
-    residence_time_col = "Residence time(sec)"
+    process_temp_col = "Process temperature"
+    inlet_temp_col = "Inlet temperature"
+    outlet_temp_col = "Outlet temperature"
+    process_pressure_col = "Process pressure"
+    inlet_pressure_col = "Inlet pressure"
+    outlet_pressure_col = "Outlet pressure"
+    residence_time_col = "Residence time"
 
     fact_df = df.copy()
     fact_df[process_col] = clean_category(fact_df[process_col])
