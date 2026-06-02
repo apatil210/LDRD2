@@ -20,6 +20,12 @@ PAPER_BG = "rgba(0,0,0,0)"
 PLOT_BG = "rgba(0,0,0,0)"
 BAR_COLOR = "#0B6E74"
 
+SEC_COLOR_MAP = {
+    "SEC Electricity": "#54A24B",
+    "SEC Fuels": "#F58518",
+    "SEC Steam": "#4C78A8",
+}
+
 
 @st.cache_data(show_spinner=False)
 def load_excel(url: str) -> pd.DataFrame:
@@ -165,6 +171,65 @@ def build_bar_chart(df: pd.DataFrame):
     return fig
 
 
+def build_sec_donut(fact_sheet: dict):
+    donut_df = pd.DataFrame({
+        "SEC Type": ["SEC Electricity", "SEC Fuels", "SEC Steam"],
+        "Value": [
+            fact_sheet["SEC Electricity"],
+            fact_sheet["SEC Fuels"],
+            fact_sheet["SEC Steam"]
+        ]
+    })
+
+    donut_df = donut_df[donut_df["Value"] > 0].copy()
+
+    fig = px.pie(
+        donut_df,
+        names="SEC Type",
+        values="Value",
+        hole=0.62,
+        color="SEC Type",
+        color_discrete_map=SEC_COLOR_MAP
+    )
+
+    total_sec = donut_df["Value"].sum()
+
+    fig.update_traces(
+        textposition="outside",
+        texttemplate="%{label}<br>%{percent}",
+        hovertemplate=(
+            "<b>%{label}</b><br>"
+            "Value: %{value:.3f}<br>"
+            "Share: %{percent}<extra></extra>"
+        ),
+        marker=dict(line=dict(color="#FFFFFF", width=2))
+    )
+
+    fig.update_layout(
+        height=360,
+        margin=dict(t=20, l=20, r=20, b=20),
+        paper_bgcolor=PAPER_BG,
+        plot_bgcolor=PLOT_BG,
+        showlegend=False,
+        font=dict(
+            family="Arial, sans-serif",
+            color=TEXT_COLOR,
+            size=13
+        ),
+        annotations=[
+            dict(
+                text=f"<b>Total SEC</b><br>{total_sec:.2f}",
+                x=0.5,
+                y=0.5,
+                showarrow=False,
+                font=dict(size=16, color=TEXT_COLOR)
+            )
+        ]
+    )
+
+    return fig
+
+
 def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     process_col = "Industrial process"
     unit_ops_col = "Unit operation (Level 3 classification; with details)"
@@ -195,6 +260,10 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     annual_production = production_values[0] if len(production_values) > 0 else 0
     annual_energy = selected_df[annual_energy_col].fillna(0).sum()
 
+    sec_electricity = selected_df[elec_col].fillna(0).sum()
+    sec_fuels = selected_df[fuel_col].fillna(0).sum()
+    sec_steam = selected_df[steam_col].fillna(0).sum()
+
     detail_df = selected_df[
         [unit_ops_col, elec_col, fuel_col, steam_col]
     ].rename(columns={
@@ -207,6 +276,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     return {
         "Annual Production": annual_production,
         "Annual Energy": annual_energy,
+        "SEC Electricity": sec_electricity,
+        "SEC Fuels": sec_fuels,
+        "SEC Steam": sec_steam,
         "Rows": selected_df.shape[0],
         "Details": detail_df
     }
@@ -236,6 +308,14 @@ try:
             c2.metric("Annual Energy", f"{fact_sheet['Annual Energy']:.2f}")
 
             st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
+
+            st.subheader("SEC Composition")
+            st.plotly_chart(
+                build_sec_donut(fact_sheet),
+                use_container_width=True,
+                theme=None,
+                config={"displayModeBar": False}
+            )
 
             st.dataframe(
                 fact_sheet["Details"],
