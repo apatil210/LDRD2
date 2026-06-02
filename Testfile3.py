@@ -13,7 +13,7 @@ st.markdown(
 
     .block-container {
         max-width: 1280px;
-        padding-top: 1.2rem;
+        padding-top: 3.5rem;
         padding-bottom: 1.2rem;
         padding-left: 2rem;
         padding-right: 2rem;
@@ -27,7 +27,7 @@ st.markdown(
         letter-spacing: -0.03em;
         text-align: center;
         color: #101828;
-        margin: 0 0 1.5rem 0;
+        margin: 0.5rem 0 1.5rem 0;
     }
 
     .section-title {
@@ -92,6 +92,18 @@ st.markdown(
     div[data-testid="column"] {
         display: flex;
         justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 2.2rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .hero-title {
+            margin-top: 0.25rem;
+        }
     }
     </style>
     """,
