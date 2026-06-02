@@ -11,234 +11,198 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     .stApp {
-        background:
-            radial-gradient(circle at top right, rgba(53, 101, 146, 0.08), transparent 28%),
-            linear-gradient(180deg, #f8fafc 0%, #f4f6f8 100%);
+        background: #ffffff;
     }
 
     .block-container {
-        max-width: 1220px;
-        padding-top: 1.25rem;
-        padding-bottom: 1.25rem;
-        padding-left: 1.8rem;
-        padding-right: 1.8rem;
+        max-width: 1180px;
+        padding-top: 0.8rem;
+        padding-bottom: 0.8rem;
+        padding-left: 1.6rem;
+        padding-right: 1.6rem;
     }
 
     .page-shell {
         min-height: calc(100vh - 2rem);
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-        gap: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 0.7rem;
     }
 
-    .hero-panel {
-        background: rgba(255, 255, 255, 0.78);
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 22px;
-        padding: 1.15rem 1.4rem 1rem;
-        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
-        backdrop-filter: blur(8px);
-    }
-
-    .eyebrow {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.76rem;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: #356592;
+    .title-wrap {
         text-align: center;
-        margin-bottom: 0.45rem;
+        padding-top: 0.1rem;
     }
 
     .hero-title {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(1.55rem, 1.15rem + 1.15vw, 2.35rem);
+        font-size: clamp(1.45rem, 1rem + 1vw, 2.15rem);
         font-weight: 800;
         line-height: 1.08;
-        letter-spacing: -0.035em;
-        color: #0f172a;
-        text-align: center;
-        max-width: 15ch;
-        margin: 0 auto;
+        letter-spacing: -0.03em;
+        color: #101828;
+        margin: 0;
         text-wrap: balance;
     }
 
-    .content-shell {
+    .content-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.88fr);
-        gap: 1rem;
-        align-items: stretch;
+        grid-template-columns: 1.9fr 0.95fr;
+        gap: 1.35rem;
+        align-items: start;
     }
 
-    .statement-card,
-    .framework-card,
-    .contributors-card {
-        background: rgba(255, 255, 255, 0.82);
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 22px;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
-        backdrop-filter: blur(8px);
+    .statement-panel {
+        padding-right: 0.1rem;
     }
 
-    .statement-card {
-        padding: 1.25rem 1.35rem 1.15rem;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-
-    .section-label {
+    .eyebrow {
         font-family: 'Inter', sans-serif;
-        font-size: 0.76rem;
+        font-size: 0.74rem;
         font-weight: 700;
-        letter-spacing: 0.13em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: #64748b;
-        margin-bottom: 0.45rem;
+        color: #275d88;
+        margin-bottom: 0.35rem;
     }
 
     .section-title {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(1.25rem, 1.02rem + 0.55vw, 1.65rem);
+        font-size: clamp(1.18rem, 1rem + 0.55vw, 1.55rem);
         font-weight: 800;
         line-height: 1.1;
-        color: #0f172a;
-        margin: 0 0 0.7rem 0;
+        color: #101828;
+        margin: 0 0 0.45rem 0;
     }
 
-    .statement-copy {
+    .body-copy {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(0.9rem, 0.87rem + 0.14vw, 0.98rem);
-        line-height: 1.5;
-        color: #334155;
+        font-size: clamp(0.84rem, 0.8rem + 0.12vw, 0.94rem);
+        line-height: 1.42;
+        color: #344054;
+        margin: 0;
+        max-width: 82ch;
     }
 
-    .statement-copy p {
-        margin: 0 0 0.72rem 0;
+    .body-copy p {
+        margin: 0;
     }
 
-    .statement-copy p:last-child {
-        margin-bottom: 0;
+    .body-copy .spacer {
+        height: 0.45rem;
     }
 
-    .framework-card {
-        padding: 1.15rem;
+    .highlights-panel {
+        border-left: 1px solid #e4e7ec;
+        padding-left: 1rem;
         display: flex;
         flex-direction: column;
+        gap: 0.55rem;
         justify-content: center;
+        min-height: 100%;
     }
 
-    .framework-grid {
+    .panel-label {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #667085;
+        margin-bottom: 0.05rem;
+    }
+
+    .nav-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 0.75rem;
-        margin-top: 0.3rem;
+        gap: 0.7rem;
+        align-items: stretch;
     }
 
-    .framework-pill {
-        position: relative;
-        overflow: hidden;
-        border-radius: 18px;
-        padding: 1rem 1rem;
-        min-height: 84px;
+    .nav-card {
+        background: linear-gradient(180deg, #2f6e9d 0%, #24597e 100%);
+        border: 1px solid #1f4f72;
+        color: #ffffff;
+        border-radius: 10px;
+        min-height: 72px;
+        padding: 0.75rem 0.8rem;
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
-        background: linear-gradient(180deg, #356592 0%, #264c70 100%);
-        border: 1px solid rgba(18, 57, 90, 0.65);
-        color: #ffffff;
         font-family: 'Inter', sans-serif;
-        font-size: clamp(0.98rem, 0.94rem + 0.2vw, 1.12rem);
+        font-size: clamp(0.92rem, 0.88rem + 0.2vw, 1.08rem);
         font-weight: 700;
-        line-height: 1.16;
-        box-shadow: 0 12px 26px rgba(37, 76, 112, 0.18);
+        line-height: 1.12;
+        box-shadow: 0 6px 18px rgba(23, 61, 94, 0.10);
     }
 
-    .framework-pill::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,0.16), transparent 52%);
-        pointer-events: none;
+    .contributors {
+        border-top: 1px solid #e4e7ec;
+        padding-top: 0.65rem;
     }
 
-    .contributors-card {
-        padding: 1rem 1.25rem;
-        display: grid;
-        grid-template-columns: 180px 1fr;
-        gap: 1rem;
-        align-items: start;
-    }
-
-    .contributors-heading {
+    .contributors-title {
         font-family: 'Inter', sans-serif;
-        font-size: 0.98rem;
+        font-size: 0.9rem;
         font-weight: 800;
-        color: #0f172a;
-    }
-
-    .contributors-meta {
-        min-width: 0;
+        color: #101828;
+        margin-bottom: 0.15rem;
     }
 
     .contributors-names {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(0.98rem, 0.95rem + 0.18vw, 1.12rem);
-        line-height: 1.35;
-        color: #0f172a;
-        margin-bottom: 0.18rem;
+        font-size: clamp(0.96rem, 0.92rem + 0.2vw, 1.08rem);
+        line-height: 1.25;
+        color: #101828;
+        margin-bottom: 0.08rem;
     }
 
     .contributors-affiliation {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(0.92rem, 0.9rem + 0.12vw, 1rem);
-        line-height: 1.35;
-        color: #475569;
+        font-size: clamp(0.88rem, 0.85rem + 0.12vw, 0.98rem);
+        line-height: 1.22;
+        color: #475467;
         font-style: italic;
     }
 
     @media (max-width: 980px) {
-        .content-shell {
-            grid-template-columns: 1fr;
-        }
-
-        .framework-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        .contributors-card {
-            grid-template-columns: 1fr;
-            gap: 0.4rem;
-        }
-    }
-
-    @media (max-width: 760px) {
-        .block-container {
-            padding-left: 0.9rem;
-            padding-right: 0.9rem;
-            padding-top: 0.8rem;
-            padding-bottom: 0.8rem;
-        }
-
         .page-shell {
             min-height: auto;
         }
 
-        .hero-panel,
-        .statement-card,
-        .framework-card,
-        .contributors-card {
-            border-radius: 18px;
+        .content-grid {
+            grid-template-columns: 1fr;
+            gap: 0.9rem;
         }
 
-        .framework-grid {
+        .highlights-panel {
+            border-left: 0;
+            border-top: 1px solid #e4e7ec;
+            padding-left: 0;
+            padding-top: 0.8rem;
+        }
+
+        .nav-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @media (max-width: 720px) {
+        .block-container {
+            padding-left: 0.9rem;
+            padding-right: 0.9rem;
+            padding-top: 0.7rem;
+            padding-bottom: 0.7rem;
+        }
+
+        .nav-grid {
             grid-template-columns: 1fr;
         }
 
-        .framework-pill {
-            min-height: 76px;
+        .nav-card {
+            min-height: 64px;
         }
     }
     </style>
@@ -249,41 +213,42 @@ st.markdown(
 st.markdown(
     """
     <div class="page-shell">
-        <section class="hero-panel">
-            <div class="eyebrow">Industrial systems research</div>
+        <div class="title-wrap">
             <h1 class="hero-title">Industrial Energy Modeling through Mapping Unit Operation Energy Demand</h1>
-        </section>
+        </div>
 
-        <section class="content-shell">
-            <article class="statement-card">
-                <div>
-                    <div class="section-label">Project statement</div>
-                    <h2 class="section-title">A unit-operation lens for industrial energy analysis</h2>
-                    <div class="statement-copy">
-                        <p>The term 'industry' refers to a wide range of thermodynamic, mechanical, and chemical processes that transform materials, each involving distinct unit operations. While these processes vary in number, sequence, and type, common operations such as drying, distillation, and compression are shared across sectors.</p>
-                        <p>However, the breakdown of industrial energy demand by these unit operations remains poorly established, and unit-operation-level industrial models are still scarce. Current frameworks such as NAICS categorize industries by what they produce rather than how they use energy, which can create silos in energy-related analysis.</p>
-                        <p>This work develops a comprehensive framework to map industrial energy demand at the unit-operation level. By disaggregating processes that represent nearly two-thirds of U.S. manufacturing and ranking unit operations by energy demand, the approach identifies priority areas for technology advancement and supports a more actionable characterization of the industrial sector.</p>
-                    </div>
+        <div class="content-grid">
+            <section class="statement-panel">
+                <div class="eyebrow">Research overview</div>
+                <h2 class="section-title">Project Statement</h2>
+
+                <div class="body-copy">
+                    <p>The term 'industry' refers to a wide range of thermodynamic, mechanical, and chemical processes that transform materials, each involving distinct unit operations. While these processes vary in number, sequence, and type, common operations such as drying, distillation, and compression are shared across sectors. However, the breakdown of industrial energy demand by these unit operations has remained poorly established, and unit-operation-level industrial models are still scarce.</p>
+
+                    <div class="spacer"></div>
+
+                    <p>If developed, these models could serve as building blocks for system-level industrial process and facility design. Current frameworks such as the North American Industry Classification System (NAICS) categorize industries by what they produce rather than how they use energy, which can create silos in energy-related analysis. This work develops a comprehensive analytical framework to evaluate energy demand in industrial processes at the unit-operation level.</p>
+
+                    <div class="spacer"></div>
+
+                    <p>The initial workflow gathered data for industrial processes representing nearly two-thirds of U.S. manufacturing and analyzed energy demand by disaggregating those processes into unit operations. By clustering and ranking unit operations according to energy demand, the framework identifies priority areas for technological advancement and supports a new approach to characterizing the U.S. industrial sector based on unit operations.</p>
                 </div>
-            </article>
+            </section>
 
-            <aside class="framework-card">
-                <div class="section-label">Core framework</div>
-                <h2 class="section-title">Three inputs that shape the model</h2>
-                <div class="framework-grid">
-                    <div class="framework-pill">Industry Data</div>
-                    <div class="framework-pill">Unit Operation<br>Data</div>
-                    <div class="framework-pill">NAICS Sector<br>Coverage</div>
+            <aside class="highlights-panel">
+                <div class="panel-label">Core framework</div>
+                <div class="nav-grid">
+                    <div class="nav-card">Industry Data</div>
+                    <div class="nav-card">Unit Operation<br>Data</div>
+                    <div class="nav-card">NAICS Sector<br>Coverage</div>
                 </div>
             </aside>
-        </section>
+        </div>
 
-        <section class="contributors-card">
-            <div class="contributors-heading">Contributors</div>
-            <div class="contributors-meta">
-                <div class="contributors-names">Akash Patil, M. Jibran S. Zuberi, Prakash Rao, Unique Karki</div>
-                <div class="contributors-affiliation">Lawrence Berkeley National Laboratory, Berkeley, CA 94720</div>
-            </div>
+        <section class="contributors">
+            <div class="contributors-title">Contributors</div>
+            <div class="contributors-names">Akash Patil, M. Jibran S. Zuberi, Prakash Rao, Unique Karki</div>
+            <div class="contributors-affiliation">Lawrence Berkeley National Laboratory, Berkeley, CA 94720</div>
         </section>
     </div>
     """,
