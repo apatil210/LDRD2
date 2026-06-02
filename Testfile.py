@@ -292,7 +292,7 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
 
     detail_df = selected_df[detail_columns].rename(columns={
         unit_ops_col: "Unit Operations",
-        elec_col: "SEC Electricity",
+        elec_col: "SEC Electricity(GJ/t)",
         fuel_col: "SEC Fuels",
         steam_col: "SEC Steam",
         efficiency_col: "Efficiency",
