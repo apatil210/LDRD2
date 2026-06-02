@@ -60,7 +60,7 @@ def clean_category(series: pd.Series) -> pd.Series:
 
 
 def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
-    category_col = "Unit operation (Level 2 classification)"
+    category_col = "Industrial process"
     value_col = "Percent Annual energy demand in 2022"
 
     df_work = df[[category_col, value_col]].copy()
@@ -97,7 +97,7 @@ def build_bar_chart(df: pd.DataFrame):
     fig = px.bar(
         chart_df,
         x="Plot Value",
-        y="Unit operation (Level 2 classification)",
+        y="Industrial process",
         orientation="h",
         text="Display Percent",
         color_discrete_sequence=[BAR_COLOR]
@@ -124,7 +124,7 @@ def build_bar_chart(df: pd.DataFrame):
         plot_bgcolor=PLOT_BG,
         margin=dict(t=60, l=280, r=120, b=20),
         xaxis_title="Percent Annual Energy Demand in 2022 (%)",
-        yaxis_title="Unit Operation (Level 2 Classification)",
+        yaxis_title="Industrial Process",
         font=dict(
             family="Arial, sans-serif",
             color=TEXT_COLOR,
@@ -230,41 +230,26 @@ def build_sec_donut(fact_sheet: dict):
     return fig
 
 
-def build_fact_sheet(df: pd.DataFrame, selected_unit_op_l2: str):
-    selection_col = "Unit operation (Level 2 classification)"
-    detail_unit_ops_col = "Unit operation (Level 3 classification; with details)"
+def build_fact_sheet(df: pd.DataFrame, selected_process: str):
+    process_col = "Industrial process"
+    unit_ops_col = "Unit operation (Level 3 classification; with details)"
     production_col = "Annual production in 2022\n(based on FU)"
     annual_energy_col = "Annual energy demand in 2022"
     elec_col = "SEC \nelectricity"
     fuel_col = "SEC \nfuels"
     steam_col = "SEC \nfuels or electricity for steam or steam from CHP"
 
-    efficiency_col = "Efficiency"
-    process_temp_col = "Process temperature"
-    inlet_temp_col = "Inlet temperature"
-    outlet_temp_col = "Outlet temperature"
-    process_pressure_col = "Process pressure"
-    inlet_pressure_col = "Inlet pressure"
-    outlet_pressure_col = "Outlet pressure"
-    residence_time_col = "Residence time"
-
     fact_df = df.copy()
-    fact_df[selection_col] = clean_category(fact_df[selection_col])
-    fact_df[detail_unit_ops_col] = clean_category(fact_df[detail_unit_ops_col])
+    fact_df[process_col] = clean_category(fact_df[process_col])
+    fact_df[unit_ops_col] = clean_category(fact_df[unit_ops_col])
 
-    selected_df = fact_df[fact_df[selection_col] == selected_unit_op_l2].copy()
+    for col in [production_col, annual_energy_col, elec_col, fuel_col, steam_col]:
+        fact_df[col] = pd.to_numeric(fact_df[col], errors="coerce")
+
+    selected_df = fact_df[fact_df[process_col] == selected_process].copy()
 
     if selected_df.empty:
         return None
-
-    for col in [
-        production_col,
-        annual_energy_col,
-        elec_col,
-        fuel_col,
-        steam_col
-    ]:
-        selected_df[col] = pd.to_numeric(selected_df[col], errors="coerce")
 
     production_values = (
         selected_df[production_col]
@@ -280,33 +265,12 @@ def build_fact_sheet(df: pd.DataFrame, selected_unit_op_l2: str):
     sec_steam = selected_df[steam_col].fillna(0).sum()
 
     detail_df = selected_df[
-        [
-            detail_unit_ops_col,
-            elec_col,
-            fuel_col,
-            steam_col,
-            efficiency_col,
-            process_temp_col,
-            inlet_temp_col,
-            outlet_temp_col,
-            process_pressure_col,
-            inlet_pressure_col,
-            outlet_pressure_col,
-            residence_time_col
-        ]
+        [unit_ops_col, elec_col, fuel_col, steam_col]
     ].rename(columns={
-        detail_unit_ops_col: "Unit Operations",
+        unit_ops_col: "Unit Operations",
         elec_col: "SEC Electricity",
         fuel_col: "SEC Fuels",
-        steam_col: "SEC Steam",
-        efficiency_col: "Efficiency",
-        process_temp_col: "Process temperature",
-        inlet_temp_col: "Inlet temperature",
-        outlet_temp_col: "Outlet temperature",
-        process_pressure_col: "Process pressure",
-        inlet_pressure_col: "Inlet pressure",
-        outlet_pressure_col: "Outlet pressure",
-        residence_time_col: "Residence time"
+        steam_col: "SEC Steam"
     })
 
     return {
@@ -320,7 +284,7 @@ def build_fact_sheet(df: pd.DataFrame, selected_unit_op_l2: str):
     }
 
 
-st.title("US Manufacturing Energy Classification: Unit Operations")
+st.title("US Manufacturing Energy Classification: Industrial Process")
 
 try:
     df = load_excel(DATA_URL)
@@ -329,17 +293,20 @@ try:
     left_col, right_col = st.columns([1.1, 1.6], gap="large")
 
     with left_col:
-        selected_unit_op_l2 = st.selectbox(
-            "Select a unit operation (Level 2 classification) to generate a fact sheet",
-            bar_df["Unit operation (Level 2 classification)"].tolist()
+        selected_process = st.selectbox(
+            "Select an industrial process to generate a fact sheet",
+            bar_df["Industrial process"].tolist()
         )
 
-        fact_sheet = build_fact_sheet(df, selected_unit_op_l2)
+        fact_sheet = build_fact_sheet(df, selected_process)
 
         if fact_sheet:
+            
             c1, c2 = st.columns(2)
             c1.metric("Annual Production (tonne/yr)", f"{fact_sheet['Annual Production']:.2f}")
             c2.metric("Annual Energy (PJ/yr)", f"{fact_sheet['Annual Energy']:.2f}")
+
+            # st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
 
             st.subheader("Specific Energy Consumption (SEC)")
             st.plotly_chart(
@@ -356,7 +323,7 @@ try:
             )
 
     with right_col:
-        st.subheader("Percent Annual Energy by Unit Operation (Level 2)")
+        st.subheader("Percent Annual Energy by Industrial Process")
 
         with st.container(height=1000):
             st.plotly_chart(
@@ -370,4 +337,4 @@ try:
             )
 
 except Exception as e:
-    st.error(f"App error: {e}")
+    st.error(f"App error: {e}")"
