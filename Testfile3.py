@@ -149,6 +149,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="contributors-affiliation" style="font-style: normal;">Lawrence Berkeley National Laboratory, Berkeley, CA 94720</div>',
+    '<div class="contributors-affiliation" style="font-style: normal;">Lawrence Berkeley National Laboratory</div>',
     unsafe_allow_html=True,
 )
