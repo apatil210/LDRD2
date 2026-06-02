@@ -20,12 +20,6 @@ PAPER_BG = "rgba(0,0,0,0)"
 PLOT_BG = "rgba(0,0,0,0)"
 BAR_COLOR = "#0B6E74"
 
-SEC_COLOR_MAP = {
-    "SEC Electricity": "#54A24B",
-    "SEC Fuels": "#F58518",
-    "SEC Steam": "#4C78A8",
-}
-
 
 @st.cache_data(show_spinner=False)
 def load_excel(url: str) -> pd.DataFrame:
@@ -171,87 +165,20 @@ def build_bar_chart(df: pd.DataFrame):
     return fig
 
 
-def build_sec_donut(fact_sheet: dict):
-    donut_df = pd.DataFrame({
-        "SEC Type": ["SEC Electricity(GJ/t)", "SEC Fuels(GJ/t)", "SEC Steam(GJ/t)"],
-        "Value": [
-            fact_sheet["SEC Electricity"],
-            fact_sheet["SEC Fuels"],
-            fact_sheet["SEC Steam"]
-        ]
-    })
-
-    donut_df = donut_df[donut_df["Value"] > 0].copy()
-
-    fig = px.pie(
-        donut_df,
-        names="SEC Type",
-        values="Value",
-        hole=0.62,
-        color="SEC Type",
-        color_discrete_map=SEC_COLOR_MAP
-    )
-
-    total_sec = donut_df["Value"].sum()
-
-    fig.update_traces(
-        textposition="outside",
-        texttemplate="%{label}<br>%{percent}",
-        hovertemplate=(
-            "<b>%{label}</b><br>"
-            "Value: %{value:.3f}<br>"
-            "Share: %{percent}<extra></extra>"
-        ),
-        marker=dict(line=dict(color="#FFFFFF", width=2))
-    )
-
-    fig.update_layout(
-        height=360,
-        margin=dict(t=20, l=20, r=20, b=20),
-        paper_bgcolor=PAPER_BG,
-        plot_bgcolor=PLOT_BG,
-        showlegend=False,
-        font=dict(
-            family="Arial, sans-serif",
-            color=TEXT_COLOR,
-            size=13
-        ),
-        annotations=[
-            dict(
-                text=f"<b>Total SEC</b><br>{total_sec:.2f}",
-                x=0.5,
-                y=0.5,
-                showarrow=False,
-                font=dict(size=16, color=TEXT_COLOR)
-            )
-        ]
-    )
-
-    return fig
-
-
 def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     process_col = "Industrial process"
     unit_ops_col = "Unit operation (Level 3 classification; with details)"
     production_col = "Annual production in 2022\n(based on FU)"
+    annual_energy_col = "Annual energy demand in 2022"
     elec_col = "SEC \nelectricity"
     fuel_col = "SEC \nfuels"
     steam_col = "SEC \nfuels or electricity for steam or steam from CHP"
-
-    efficiency_col = "Efficiency"
-    process_temp_col = "Process temperature"
-    inlet_temp_col = "Inlet temperature"
-    outlet_temp_col = "Outlet temperature"
-    process_pressure_col = "Process pressure"
-    inlet_pressure_col = "Inlet pressure"
-    outlet_pressure_col = "Outlet pressure"
-    residence_time_col = "Residence time"
 
     fact_df = df.copy()
     fact_df[process_col] = clean_category(fact_df[process_col])
     fact_df[unit_ops_col] = clean_category(fact_df[unit_ops_col])
 
-    for col in [production_col, elec_col, fuel_col, steam_col]:
+    for col in [production_col, annual_energy_col, elec_col, fuel_col, steam_col]:
         fact_df[col] = pd.to_numeric(fact_df[col], errors="coerce")
 
     selected_df = fact_df[fact_df[process_col] == selected_process].copy()
@@ -266,50 +193,20 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
         .unique()
     )
     annual_production = production_values[0] if len(production_values) > 0 else 0
+    annual_energy = selected_df[annual_energy_col].fillna(0).sum()
 
-    sec_electricity = selected_df[elec_col].fillna(0).sum()
-    sec_fuels = selected_df[fuel_col].fillna(0).sum()
-    sec_steam = selected_df[steam_col].fillna(0).sum()
-
-    detail_columns = [
-        unit_ops_col,
-        elec_col,
-        fuel_col,
-        steam_col,
-        efficiency_col,
-        process_temp_col,
-        inlet_temp_col,
-        outlet_temp_col,
-        process_pressure_col,
-        inlet_pressure_col,
-        outlet_pressure_col,
-        residence_time_col,
-    ]
-
-    for col in detail_columns:
-        if col not in selected_df.columns:
-            selected_df[col] = pd.NA
-
-    detail_df = selected_df[detail_columns].rename(columns={
+    detail_df = selected_df[
+        [unit_ops_col, elec_col, fuel_col, steam_col]
+    ].rename(columns={
         unit_ops_col: "Unit Operations",
-        elec_col: "SEC Electricity(GJ/t)",
-        fuel_col: "SEC Fuels(GJ/t)",
-        steam_col: "SEC Steam(GJ/t)",
-        efficiency_col: "Efficiency(%)",
-        process_temp_col: "Process temperature(°C)",
-        inlet_temp_col: "Inlet temperature(°C)",
-        outlet_temp_col: "Outlet temperature(°C)",
-        process_pressure_col: "Process pressure(bar)",
-        inlet_pressure_col: "Inlet pressure(bar)",
-        outlet_pressure_col: "Outlet pressure(bar)",
-        residence_time_col: "Residence time(sec)",
+        elec_col: "SEC Electricity",
+        fuel_col: "SEC Fuels",
+        steam_col: "SEC Steam"
     })
 
     return {
         "Annual Production": annual_production,
-        "SEC Electricity": sec_electricity,
-        "SEC Fuels": sec_fuels,
-        "SEC Steam": sec_steam,
+        "Annual Energy": annual_energy,
         "Rows": selected_df.shape[0],
         "Details": detail_df
     }
@@ -335,24 +232,11 @@ try:
             st.subheader(f"Fact Sheet: {selected_process}")
 
             c1, c2 = st.columns(2)
-            c3, c4 = st.columns(2)
-
             c1.metric("Annual Production", f"{fact_sheet['Annual Production']:.2f}")
-            c2.metric("SEC Electricity", f"{fact_sheet['SEC Electricity']:.2f}")
-            c3.metric("SEC Fuels", f"{fact_sheet['SEC Fuels']:.2f}")
-            c4.metric("SEC Steam", f"{fact_sheet['SEC Steam']:.2f}")
+            c2.metric("Annual Energy", f"{fact_sheet['Annual Energy']:.2f}")
 
             st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
 
-            st.subheader("SEC Composition")
-            st.plotly_chart(
-                build_sec_donut(fact_sheet),
-                use_container_width=True,
-                theme=None,
-                config={"displayModeBar": False}
-            )
-
-            st.subheader("Process Details")
             st.dataframe(
                 fact_sheet["Details"],
                 use_container_width=True,
