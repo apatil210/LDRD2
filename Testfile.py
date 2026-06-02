@@ -306,7 +306,7 @@ try:
             c1.metric("Annual Production (tonne/yr)", f"{fact_sheet['Annual Production']:.2f}")
             c2.metric("Annual Energy (PJ/yr)", f"{fact_sheet['Annual Energy']:.2f}")
 
-            st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
+            # st.caption(f"Underlying rows used: {fact_sheet['Rows']}")
 
             st.subheader("Specific Energy Consumption (SEC) Composition")
             st.plotly_chart(
