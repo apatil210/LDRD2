@@ -7,7 +7,7 @@ import requests
 import streamlit as st
 
 st.set_page_config(
-    page_title="Energy Classification: Industrial Process",
+    page_title="US Manufacturing Energy Classification: Industrial Process",
     layout="wide"
 )
 
