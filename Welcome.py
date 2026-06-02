@@ -158,7 +158,7 @@ col1, col2, col3 = st.columns(3, gap="large")
 with col1:
     st.markdown(
         '''
-        <a class="nav-link" href="https://testfilepy-adgzkwgrpeml8ungt35ls7.streamlit.app/" target="_blank">
+        <a class="nav-link" href="https://testfilepy-adgzkwgrpeml8ungt35ls7.streamlit.app/" target="_self">
             <div class="nav-card">
                 <div>Industry Data</div>
                 <div class="nav-subtext">[Click Here]</div>
