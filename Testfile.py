@@ -238,30 +238,20 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     fuel_col = "SEC \nfuels"
     steam_col = "SEC \nfuels or electricity for steam or steam from CHP"
 
-    major_equipment_col = "Major equipment"
-    equipment_type_col = "Equipment type"
-    technology_type_col = "Most typical technology type"
     efficiency_col = "Efficiency"
     process_temp_col = "Process temperature"
     inlet_temp_col = "Inlet temperature"
     outlet_temp_col = "Outlet temperature"
     process_pressure_col = "Process pressure"
+    inlet_pressure_col = "Inlet pressure"
+    outlet_pressure_col = "Outlet pressure"
+    residence_time_col = "Residence time"
 
     fact_df = df.copy()
     fact_df[process_col] = clean_category(fact_df[process_col])
     fact_df[unit_ops_col] = clean_category(fact_df[unit_ops_col])
 
-    for col in [
-        production_col,
-        elec_col,
-        fuel_col,
-        steam_col,
-        efficiency_col,
-        process_temp_col,
-        inlet_temp_col,
-        outlet_temp_col,
-        process_pressure_col
-    ]:
+    for col in [production_col, elec_col, fuel_col, steam_col]:
         fact_df[col] = pd.to_numeric(fact_df[col], errors="coerce")
 
     selected_df = fact_df[fact_df[process_col] == selected_process].copy()
@@ -281,34 +271,38 @@ def build_fact_sheet(df: pd.DataFrame, selected_process: str):
     sec_fuels = selected_df[fuel_col].fillna(0).sum()
     sec_steam = selected_df[steam_col].fillna(0).sum()
 
-    detail_df = selected_df[
-        [
-            unit_ops_col,
-            major_equipment_col,
-            equipment_type_col,
-            technology_type_col,
-            efficiency_col,
-            process_temp_col,
-            inlet_temp_col,
-            outlet_temp_col,
-            process_pressure_col,
-            elec_col,
-            fuel_col,
-            steam_col
-        ]
-    ].rename(columns={
+    detail_columns = [
+        unit_ops_col,
+        elec_col,
+        fuel_col,
+        steam_col,
+        efficiency_col,
+        process_temp_col,
+        inlet_temp_col,
+        outlet_temp_col,
+        process_pressure_col,
+        inlet_pressure_col,
+        outlet_pressure_col,
+        residence_time_col,
+    ]
+
+    for col in detail_columns:
+        if col not in selected_df.columns:
+            selected_df[col] = pd.NA
+
+    detail_df = selected_df[detail_columns].rename(columns={
         unit_ops_col: "Unit Operations",
-        major_equipment_col: "Major Equipment",
-        equipment_type_col: "Equipment Type",
-        technology_type_col: "Typical Technology",
-        efficiency_col: "Efficiency",
-        process_temp_col: "Process Temp",
-        inlet_temp_col: "Inlet Temp",
-        outlet_temp_col: "Outlet Temp",
-        process_pressure_col: "Process Pressure",
         elec_col: "SEC Electricity",
         fuel_col: "SEC Fuels",
-        steam_col: "SEC Steam"
+        steam_col: "SEC Steam",
+        efficiency_col: "Efficiency",
+        process_temp_col: "Process temperature",
+        inlet_temp_col: "Inlet temperature",
+        outlet_temp_col: "Outlet temperature",
+        process_pressure_col: "Process pressure",
+        inlet_pressure_col: "Inlet pressure",
+        outlet_pressure_col: "Outlet pressure",
+        residence_time_col: "Residence time",
     })
 
     return {
@@ -358,7 +352,7 @@ try:
                 config={"displayModeBar": False}
             )
 
-            st.subheader("Unit Operation Details")
+            st.subheader("Process Details")
             st.dataframe(
                 fact_sheet["Details"],
                 use_container_width=True,
