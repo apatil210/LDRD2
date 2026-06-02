@@ -218,7 +218,7 @@ def build_sec_donut(fact_sheet: dict):
         ),
         annotations=[
             dict(
-                text=f"<b>Total SEC</b><br>{total_sec:.2f}",
+                text=f"<b>Total SEC (GJ/t)</b><br>{total_sec:.2f}",
                 x=0.5,
                 y=0.5,
                 showarrow=False,
