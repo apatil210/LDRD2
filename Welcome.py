@@ -72,6 +72,12 @@ st.markdown(
         font-style: normal;
     }
 
+    .nav-link {
+        text-decoration: none;
+        display: block;
+        width: 100%;
+    }
+
     .nav-card {
         background: #2d658f;
         border: 2px solid #1d4868;
@@ -90,6 +96,15 @@ st.markdown(
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         margin: 0.5rem auto 1rem auto;
         max-width: 240px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .nav-card:hover {
+        background: #245676;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
     }
 
     .nav-subtext {
@@ -143,19 +158,35 @@ col1, col2, col3 = st.columns(3, gap="large")
 with col1:
     st.markdown(
         '''
-        <div class="nav-card">
-            <div>Industry Data</div>
-            <div class="nav-subtext">[Click Here]</div>
-        </div>
+        <a class="nav-link" href="https://testfilepy-adgzkwgrpeml8ungt35ls7.streamlit.app/" target="_blank">
+            <div class="nav-card">
+                <div>Industry Data</div>
+                <div class="nav-subtext">[Click Here]</div>
+            </div>
+        </a>
         ''',
         unsafe_allow_html=True,
     )
 
 with col2:
-    st.markdown('<div class="nav-card">Unit Operation<br>Data</div>', unsafe_allow_html=True)
+    st.markdown(
+        '''
+        <div class="nav-card">
+            <div>Unit Operation<br>Data</div>
+        </div>
+        ''',
+        unsafe_allow_html=True,
+    )
 
 with col3:
-    st.markdown('<div class="nav-card">NAICS Sector<br>Coverage</div>', unsafe_allow_html=True)
+    st.markdown(
+        '''
+        <div class="nav-card">
+            <div>NAICS Sector<br>Coverage</div>
+        </div>
+        ''',
+        unsafe_allow_html=True,
+    )
 
 st.markdown('<div class="contributors-title">Contributors:</div>', unsafe_allow_html=True)
 st.markdown(
