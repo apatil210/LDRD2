@@ -1,4 +1,5 @@
 from io import BytesIO
+import re
 
 import pandas as pd
 import plotly.express as px
@@ -31,18 +32,18 @@ SEC_COLOR_MAP = {
 }
 
 # ----------------------------
-# Expected columns
+# Exact workbook column names
 # ----------------------------
-COL_L2 = "Unit operation Level 2 classification"
-COL_L3 = "Unit operation Level 3 classification with details"
+COL_L2 = "Unit operation (Level 2 classification)"
+COL_L3 = "Unit operation (Level 3 classification; with details)"
 COL_PERCENT_ENERGY = "Percent Annual energy demand in 2022"
 
-COL_ANNUAL_PRODUCTION = "Annual production in 2022 based on FU"
+COL_ANNUAL_PRODUCTION = "Annual production in 2022\n(based on FU)"
 COL_ANNUAL_ENERGY = "Annual energy demand in 2022"
 
-COL_SEC_ELECTRICITY = "SEC electricity"
-COL_SEC_FUELS = "SEC fuels"
-COL_SEC_STEAM = "SEC fuels or electricity for steam or steam from CHP"
+COL_SEC_ELECTRICITY = "SEC\nelectricity"
+COL_SEC_FUELS = "SEC\nfuels"
+COL_SEC_STEAM = "SEC\nfuels or electricity for steam or steam from CHP"
 
 COL_EFFICIENCY = "Efficiency"
 COL_PROCESS_TEMP = "Process temperature"
@@ -58,30 +59,30 @@ COL_RESIDENCE_TIME = "Residence time"
 # Header utilities
 # ----------------------------
 def normalize_header(value) -> str:
-    return (
-        str(value)
-        .replace("\n", " ")
-        .replace("\r", " ")
-        .strip()
-        .replace("  ", " ")
-    )
+    text = str(value)
+    text = text.replace("\n", " ").replace("\r", " ")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def canonical_header(value) -> str:
+    text = normalize_header(value).lower()
+    text = text.replace("&", "and")
+    text = re.sub(r"[^a-z0-9]+", "", text)
+    return text
 
 
 def find_matching_column(df: pd.DataFrame, target: str) -> str:
-    normalized_target = normalize_header(target).lower()
-    normalized_map = {
-        normalize_header(col).lower(): col
-        for col in df.columns
-    }
+    target_canonical = canonical_header(target)
 
-    if normalized_target in normalized_map:
-        return normalized_map[normalized_target]
+    for col in df.columns:
+        if canonical_header(col) == target_canonical:
+            return col
 
-    for norm_col, original_col in normalized_map.items():
-        if normalized_target == norm_col:
-            return original_col
-
-    raise KeyError(f"Could not find required column: {target}")
+    available = "\n".join([f"- {repr(col)}" for col in df.columns])
+    raise KeyError(
+        f"Could not find required column: {target}\nAvailable columns:\n{available}"
+    )
 
 
 # ----------------------------
@@ -103,12 +104,16 @@ def load_excel_data(url: str) -> pd.DataFrame:
         engine="openpyxl"
     )
 
-    # Workbook structure uses a grouped top row and the true field names
-    # on the second visible header row.
+    # The workbook uses:
+    # row 0 = grouped section labels
+    # row 1 = actual field names
+    # row 2 = units
+    # data starts after that
     header_row_idx = 1
+    data_start_idx = header_row_idx + 2
 
-    df = raw_df.iloc[header_row_idx + 2:].copy()
-    df.columns = raw_df.iloc[header_row_idx].map(normalize_header)
+    df = raw_df.iloc[data_start_idx:].copy()
+    df.columns = raw_df.iloc[header_row_idx].map(lambda x: str(x))
     df = df.reset_index(drop=True)
 
     return df
@@ -130,7 +135,13 @@ def clean_category(series: pd.Series) -> pd.Series:
 
 
 def to_numeric_safe(series: pd.Series) -> pd.Series:
-    return pd.to_numeric(series, errors="coerce")
+    cleaned = (
+        series.astype(str)
+        .str.replace("%", "", regex=False)
+        .str.replace(",", "", regex=False)
+        .str.strip()
+    )
+    return pd.to_numeric(cleaned, errors="coerce")
 
 
 # ----------------------------
@@ -152,12 +163,21 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     grouped_df = grouped_df[grouped_df[pct_col] != 0].copy()
+
+    # If the source values are already percent numbers like 3.9846,
+    # display them directly. If they are fractions like 0.039846,
+    # convert to percent.
+    max_abs_val = grouped_df[pct_col].abs().max()
+    if pd.notna(max_abs_val) and max_abs_val <= 1:
+        grouped_df["Display Percent"] = grouped_df[pct_col] * 100
+    else:
+        grouped_df["Display Percent"] = grouped_df[pct_col]
+
     grouped_df = grouped_df.rename(columns={
         l2_col: "Unit operation (Level 2 classification)",
-        pct_col: "Percent Annual energy demand in 2022"
+        pct_col: "Raw Percent Annual energy demand in 2022"
     })
 
-    grouped_df["Display Percent"] = grouped_df["Percent Annual energy demand in 2022"] * 100
     grouped_df["Rank"] = range(1, len(grouped_df) + 1)
 
     return grouped_df
@@ -271,7 +291,7 @@ def build_bar_chart(df: pd.DataFrame):
     )
 
     fig.update_traces(
-        texttemplate="%{text:.3f}%",
+        texttemplate="%{text:.4f}%",
         textposition="outside",
         cliponaxis=False,
         hovertemplate=(
@@ -288,7 +308,7 @@ def build_bar_chart(df: pd.DataFrame):
         height=max(700, 34 * len(chart_df)),
         paper_bgcolor=PAPER_BG,
         plot_bgcolor=PLOT_BG,
-        margin=dict(t=60, l=320, r=80, b=30),
+        margin=dict(t=60, l=340, r=80, b=30),
         xaxis_title="Percent Annual Energy Demand in 2022 (%)",
         yaxis_title="Unit Operation (Level 2 Classification)",
         font=dict(
