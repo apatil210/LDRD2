@@ -1,255 +1,373 @@
-import streamlit as st
-import pandas as pd
-import requests
 from io import BytesIO
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
-st.set_page_config(page_title="Figure 3", layout="wide")
+import pandas as pd
+import plotly.express as px
+import plotly.io as pio
+import requests
+import streamlit as st
 
-file_url = "https://raw.githubusercontent.com/apatil210/LDRD/main/Figure3Data.xlsx"
-value_cols = ["Electricity", "Fuel", "Steam"]
-THRESHOLD_PCT = 5.0
-
-BG_COLOR = "white"
-PAPER_BG = "white"
-PLOT_BG = "white"
-TEXT_COLOR = "#111111"
-DIVIDER_COLOR = "#F7F5F1"
-LABEL_SIZE = 14
-
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-         background-color: {BG_COLOR};
-    }}
-    .block-container {{
-        padding-top: 1.5rem;
-        padding-bottom: 1.5rem;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
+st.set_page_config(
+    page_title="US Manufacturing Energy Classification",
+    layout="wide"
 )
 
+pio.templates.default = "plotly"
 
-@st.cache_data
-def load_data(url):
+DATA_URL = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20Data.xlsx"
+
+TEXT_COLOR = "#14212B"
+PAPER_BG = "rgba(0,0,0,0)"
+PLOT_BG = "rgba(0,0,0,0)"
+BAR_COLOR = "#0B6E74"
+
+SEC_COLOR_MAP = {
+    "SEC Electricity": "#54A24B",
+    "SEC Fuels": "#F58518",
+    "SEC Steam": "#4C78A8",
+}
+
+
+@st.cache_data(show_spinner=False)
+def load_excel(url: str) -> pd.DataFrame:
     response = requests.get(url, timeout=30)
     response.raise_for_status()
-    return pd.read_excel(BytesIO(response.content), engine="openpyxl")
 
+    content_type = response.headers.get("Content-Type", "")
+    if "text/html" in content_type.lower():
+        raise ValueError("URL returned an HTML page instead of an Excel file.")
 
-def make_labels(df_in, value_col, threshold_pct=1.0):
-    out = df_in.copy()
-    out = out[out[value_col] > 0].copy()
-
-    total = out[value_col].sum()
-    if total > 0:
-        out["Share_pct"] = 100 * out[value_col] / total
-    else:
-        out["Share_pct"] = 0
-
-    out["Display_text"] = out.apply(
-        lambda r: f"<b>{r['Category_clean']}</b><br>{r['Share_pct']:.1f}%"
-        if r["Share_pct"] > threshold_pct else "",
-        axis=1
+    raw_df = pd.read_excel(
+        BytesIO(response.content),
+        sheet_name="Process-level data",
+        header=None,
+        engine="openpyxl"
     )
 
-    out_treemap = out[out["Share_pct"] > threshold_pct].copy().reset_index(drop=True)
-    out_all = out.sort_values(value_col, ascending=False).reset_index(drop=True)
+    header_row_idx = 1
+    df = raw_df.iloc[header_row_idx + 2:].copy()
+    df.columns = raw_df.iloc[header_row_idx].astype(str).str.strip()
+    df = df.reset_index(drop=True)
 
-    return out_treemap, out_all
+    return df
 
+
+def clean_category(series: pd.Series) -> pd.Series:
+    return (
+        series.astype(str)
+        .str.strip()
+        .replace({"": "Unknown", "nan": "Unknown", "None": "Unknown"})
+    )
+
+
+def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
+    category_col = "Unit operation (Level 2 classification)"
+    value_col = "Percent Annual energy demand in 2022"
+
+    df_work = df[[category_col, value_col]].copy()
+    df_work[category_col] = clean_category(df_work[category_col])
+    df_work[value_col] = pd.to_numeric(df_work[value_col], errors="coerce").fillna(0)
+
+    df_agg = (
+        df_work.groupby(category_col, as_index=False)[value_col]
+        .sum()
+        .sort_values(value_col, ascending=False)
+        .reset_index(drop=True)
+    )
+
+    df_agg = df_agg[df_agg[value_col] > 0].copy()
+    df_agg["Display Percent"] = df_agg[value_col] * 100
+    df_agg["Rank"] = range(1, len(df_agg) + 1)
+
+    return df_agg
+
+
+def build_bar_chart(df: pd.DataFrame):
+    break_start = 8.0
+    break_end = 21.0
+    compressed_gap = 1.2
+
+    def transform_value(x):
+        if x <= break_start:
+            return x
+        return break_start + compressed_gap + (x - break_end)
+
+    chart_df = df.copy()
+    chart_df["Plot Value"] = chart_df["Display Percent"].apply(transform_value)
+
+    fig = px.bar(
+        chart_df,
+        x="Plot Value",
+        y="Unit operation (Level 2 classification)",
+        orientation="h",
+        text="Display Percent",
+        color_discrete_sequence=[BAR_COLOR]
+    )
+
+    fig.update_traces(
+        texttemplate="%{text:.1f}%",
+        textposition="outside",
+        cliponaxis=False,
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "Percent annual energy: %{text:.2f}%<extra></extra>"
+        ),
+        marker=dict(line=dict(color="#FCFCFA", width=1.2))
+    )
+
+    max_display = chart_df["Display Percent"].max()
+    max_plot = transform_value(max_display) + 0.8
+
+    fig.update_layout(
+        width=1500,
+        height=max(700, 32 * len(chart_df)),
+        paper_bgcolor=PAPER_BG,
+        plot_bgcolor=PLOT_BG,
+        margin=dict(t=60, l=280, r=120, b=20),
+        xaxis_title="Percent Annual Energy Demand in 2022 (%)",
+        yaxis_title="Unit Operation (Level 2 Classification)",
+        font=dict(
+            family="Arial, sans-serif",
+            color=TEXT_COLOR,
+            size=14
+        ),
+        shapes=[
+            dict(
+                type="line",
+                x0=break_start + 0.35,
+                x1=break_start + 0.55,
+                y0=-0.5,
+                y1=len(chart_df) - 0.5,
+                xref="x",
+                yref="y",
+                line=dict(color="white", width=6)
+            ),
+            dict(
+                type="line",
+                x0=break_start + 0.65,
+                x1=break_start + 0.85,
+                y0=-0.5,
+                y1=len(chart_df) - 0.5,
+                xref="x",
+                yref="y",
+                line=dict(color="white", width=6)
+            )
+        ]
+    )
+
+    fig.update_xaxes(
+        range=[0, max_plot + 0.8],
+        tickmode="array",
+        tickvals=[0, 1, 2, 3, 4, 5, 6, 7, break_start + compressed_gap],
+        ticktext=["0%", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "21%"],
+        showgrid=True,
+        automargin=True
+    )
+
+    fig.update_yaxes(
+        categoryorder="total ascending",
+        automargin=True
+    )
+
+    return fig
+
+
+def build_sec_donut(fact_sheet: dict):
+    donut_df = pd.DataFrame({
+        "SEC Type": ["SEC Electricity", "SEC Fuels", "SEC Steam"],
+        "Value": [
+            fact_sheet["SEC Electricity"],
+            fact_sheet["SEC Fuels"],
+            fact_sheet["SEC Steam"]
+        ]
+    })
+
+    donut_df = donut_df[donut_df["Value"] > 0].copy()
+
+    fig = px.pie(
+        donut_df,
+        names="SEC Type",
+        values="Value",
+        hole=0.62,
+        color="SEC Type",
+        color_discrete_map=SEC_COLOR_MAP
+    )
+
+    total_sec = donut_df["Value"].sum()
+
+    fig.update_traces(
+        textposition="outside",
+        texttemplate="%{label}<br>%{percent}",
+        hovertemplate=(
+            "<b>%{label}</b><br>"
+            "Value: %{value:.3f}<br>"
+            "Share: %{percent}<extra></extra>"
+        ),
+        marker=dict(line=dict(color="#FFFFFF", width=2))
+    )
+
+    fig.update_layout(
+        height=360,
+        margin=dict(t=20, l=20, r=20, b=20),
+        paper_bgcolor=PAPER_BG,
+        plot_bgcolor=PLOT_BG,
+        showlegend=False,
+        font=dict(
+            family="Arial, sans-serif",
+            color=TEXT_COLOR,
+            size=13
+        ),
+        annotations=[
+            dict(
+                text=f"<b>Total SEC (GJ/t)</b><br>{total_sec:.2f}",
+                x=0.5,
+                y=0.5,
+                showarrow=False,
+                font=dict(size=16, color=TEXT_COLOR)
+            )
+        ]
+    )
+
+    return fig
+
+
+def build_fact_sheet(df: pd.DataFrame, selected_unit_op_l2: str):
+    selection_col = "Unit operation (Level 2 classification)"
+    detail_unit_ops_col = "Unit operation (Level 3 classification; with details)"
+    production_col = "Annual production in 2022\n(based on FU)"
+    annual_energy_col = "Annual energy demand in 2022"
+    elec_col = "SEC \nelectricity"
+    fuel_col = "SEC \nfuels"
+    steam_col = "SEC \nfuels or electricity for steam or steam from CHP"
+
+    efficiency_col = "Efficiency"
+    process_temp_col = "Process temperature"
+    inlet_temp_col = "Inlet temperature"
+    outlet_temp_col = "Outlet temperature"
+    process_pressure_col = "Process pressure"
+    inlet_pressure_col = "Inlet pressure"
+    outlet_pressure_col = "Outlet pressure"
+    residence_time_col = "Residence time"
+
+    fact_df = df.copy()
+    fact_df[selection_col] = clean_category(fact_df[selection_col])
+    fact_df[detail_unit_ops_col] = clean_category(fact_df[detail_unit_ops_col])
+
+    selected_df = fact_df[fact_df[selection_col] == selected_unit_op_l2].copy()
+
+    if selected_df.empty:
+        return None
+
+    for col in [
+        production_col,
+        annual_energy_col,
+        elec_col,
+        fuel_col,
+        steam_col
+    ]:
+        selected_df[col] = pd.to_numeric(selected_df[col], errors="coerce")
+
+    production_values = (
+        selected_df[production_col]
+        .dropna()
+        .loc[lambda s: s != 0]
+        .unique()
+    )
+    annual_production = production_values[0] if len(production_values) > 0 else 0
+    annual_energy = selected_df[annual_energy_col].fillna(0).sum()
+
+    sec_electricity = selected_df[elec_col].fillna(0).sum()
+    sec_fuels = selected_df[fuel_col].fillna(0).sum()
+    sec_steam = selected_df[steam_col].fillna(0).sum()
+
+    detail_df = selected_df[
+        [
+            detail_unit_ops_col,
+            elec_col,
+            fuel_col,
+            steam_col,
+            efficiency_col,
+            process_temp_col,
+            inlet_temp_col,
+            outlet_temp_col,
+            process_pressure_col,
+            inlet_pressure_col,
+            outlet_pressure_col,
+            residence_time_col
+        ]
+    ].rename(columns={
+        detail_unit_ops_col: "Unit Operations",
+        elec_col: "SEC Electricity",
+        fuel_col: "SEC Fuels",
+        steam_col: "SEC Steam",
+        efficiency_col: "Efficiency",
+        process_temp_col: "Process temperature",
+        inlet_temp_col: "Inlet temperature",
+        outlet_temp_col: "Outlet temperature",
+        process_pressure_col: "Process pressure",
+        inlet_pressure_col: "Inlet pressure",
+        outlet_pressure_col: "Outlet pressure",
+        residence_time_col: "Residence time"
+    })
+
+    return {
+        "Annual Production": annual_production,
+        "Annual Energy": annual_energy,
+        "SEC Electricity": sec_electricity,
+        "SEC Fuels": sec_fuels,
+        "SEC Steam": sec_steam,
+        "Rows": selected_df.shape[0],
+        "Details": detail_df
+    }
+
+
+st.title("US Manufacturing Energy Classification: Unit Operation (Level 2)")
 
 try:
-    df = load_data(file_url)
+    df = load_excel(DATA_URL)
+    bar_df = prepare_bar_data(df)
+
+    left_col, right_col = st.columns([1.1, 1.6], gap="large")
+
+    with left_col:
+        selected_unit_op_l2 = st.selectbox(
+            "Select a unit operation (Level 2 classification) to generate a fact sheet",
+            bar_df["Unit operation (Level 2 classification)"].tolist()
+        )
+
+        fact_sheet = build_fact_sheet(df, selected_unit_op_l2)
+
+        if fact_sheet:
+            c1, c2 = st.columns(2)
+            c1.metric("Annual Production (tonne/yr)", f"{fact_sheet['Annual Production']:.2f}")
+            c2.metric("Annual Energy (PJ/yr)", f"{fact_sheet['Annual Energy']:.2f}")
+
+            st.subheader("Specific Energy Consumption (SEC)")
+            st.plotly_chart(
+                build_sec_donut(fact_sheet),
+                use_container_width=True,
+                theme=None,
+                config={"displayModeBar": False}
+            )
+
+            st.dataframe(
+                fact_sheet["Details"],
+                use_container_width=True,
+                hide_index=True
+            )
+
+    with right_col:
+        st.subheader("Percent Annual Energy by Unit Operation (Level 2)")
+
+        with st.container(height=1000):
+            st.plotly_chart(
+                build_bar_chart(bar_df),
+                use_container_width=False,
+                theme=None,
+                config={
+                    "displayModeBar": False,
+                    "scrollZoom": False
+                }
+            )
+
 except Exception as e:
-    st.error(f"Failed to load Excel file: {e}")
-    st.stop()
-
-required_columns = {"Category", "Electricity", "Fuel", "Steam"}
-if not required_columns.issubset(df.columns):
-    st.error(f"Excel file must contain these columns: {required_columns}")
-    st.write("Columns found:", list(df.columns))
-    st.stop()
-
-df_agg = df.groupby("Category", as_index=False)[value_cols].sum()
-df_agg["Category_clean"] = (
-    df_agg["Category"].astype(str).str.replace("_", " ", regex=False).str.strip()
-)
-df_agg = df_agg[(df_agg[value_cols] > 0).any(axis=1)].copy()
-
-if df_agg.empty:
-    st.warning("No positive values found for Electricity, Fuel, or Steam.")
-    st.stop()
-
-base_palette = [
-    "#147A7E",
-    "#447DA1",
-    "#5A9C57",
-    "#9B6634",
-    "#B22373",
-    "#3CA996",
-    "#7A38A2",
-    "#B87434",
-    "#6E9A10",
-    "#5D67A8",
-]
-
-categories = df_agg["Category_clean"].tolist()
-palette = (base_palette * ((len(categories) // len(base_palette)) + 1))[:len(categories)]
-color_map = dict(zip(categories, palette))
-
-elec_tree, elec_all = make_labels(df_agg, "Electricity", THRESHOLD_PCT)
-fuel_tree, fuel_all = make_labels(df_agg, "Fuel", THRESHOLD_PCT)
-steam_tree, steam_all = make_labels(df_agg, "Steam", THRESHOLD_PCT)
-
-fig = make_subplots(
-    rows=1,
-    cols=3,
-    specs=[[{"type": "domain"}, {"type": "domain"}, {"type": "domain"}]],
-    subplot_titles=("Electricity (>5%)", "Fuel (>5%)", "Steam (>5%)")
-)
-
-common_textfont = dict(
-    size=LABEL_SIZE,
-    color=TEXT_COLOR,
-    family="Arial, sans-serif"
-)
-
-common_hovertemplate = (
-    "<b>%{label}</b><br>"
-    "Value: %{customdata[1]:.3f}<br>"
-    "Share: %{customdata[0]:.2f}%"
-    "<extra></extra>"
-)
-
-fig.add_trace(
-    go.Treemap(
-        labels=elec_tree["Category_clean"],
-        parents=[""] * len(elec_tree),
-        values=elec_tree["Electricity"],
-        customdata=elec_tree[["Share_pct", "Electricity", "Display_text"]].values,
-        texttemplate="%{customdata[2]}",
-        textposition="middle center",
-        textfont=common_textfont,
-        marker=dict(
-            colors=[color_map[c] for c in elec_tree["Category_clean"]],
-            line=dict(color=DIVIDER_COLOR, width=6),
-            cornerradius=10
-        ),
-        tiling=dict(pad=5, squarifyratio=1.0),
-        hovertemplate=common_hovertemplate,
-        hoverlabel=dict(
-            bgcolor="rgba(255,255,255,0.92)",
-            bordercolor="#D8D2C8",
-            font=dict(color="#222222", size=14)
-        ),
-        branchvalues="total",
-        pathbar=dict(visible=False),
-        name="Electricity"
-    ),
-    row=1,
-    col=1
-)
-
-fig.add_trace(
-    go.Treemap(
-        labels=fuel_tree["Category_clean"],
-        parents=[""] * len(fuel_tree),
-        values=fuel_tree["Fuel"],
-        customdata=fuel_tree[["Share_pct", "Fuel", "Display_text"]].values,
-        texttemplate="%{customdata[2]}",
-        textposition="middle center",
-        textfont=common_textfont,
-        marker=dict(
-            colors=[color_map[c] for c in fuel_tree["Category_clean"]],
-            line=dict(color=DIVIDER_COLOR, width=6),
-            cornerradius=10
-        ),
-        tiling=dict(pad=5, squarifyratio=1.0),
-        hovertemplate=common_hovertemplate,
-        hoverlabel=dict(
-            bgcolor="rgba(255,255,255,0.92)",
-            bordercolor="#D8D2C8",
-            font=dict(color="#222222", size=14)
-        ),
-        branchvalues="total",
-        pathbar=dict(visible=False),
-        name="Fuel"
-    ),
-    row=1,
-    col=2
-)
-
-fig.add_trace(
-    go.Treemap(
-        labels=steam_tree["Category_clean"],
-        parents=[""] * len(steam_tree),
-        values=steam_tree["Steam"],
-        customdata=steam_tree[["Share_pct", "Steam", "Display_text"]].values,
-        texttemplate="%{customdata[2]}",
-        textposition="middle center",
-        textfont=common_textfont,
-        marker=dict(
-            colors=[color_map[c] for c in steam_tree["Category_clean"]],
-            line=dict(color=DIVIDER_COLOR, width=6),
-            cornerradius=10
-        ),
-        tiling=dict(pad=5, squarifyratio=1.0),
-        hovertemplate=common_hovertemplate,
-        hoverlabel=dict(
-            bgcolor="rgba(255,255,255,0.92)",
-            bordercolor="#D8D2C8",
-            font=dict(color="#222222", size=14)
-        ),
-        branchvalues="total",
-        pathbar=dict(visible=False),
-        name="Steam"
-    ),
-    row=1,
-    col=3
-)
-
-fig.update_annotations(
-    font=dict(size=18, color="#333333", family="Arial, sans-serif")
-)
-
-fig.update_layout(
-    paper_bgcolor=PAPER_BG,
-    plot_bgcolor=PLOT_BG,
-    margin=dict(t=50, l=10, r=10, b=10),
-    height=760,
-    font=dict(color=TEXT_COLOR, family="Arial, sans-serif"),
-    uniformtext=dict(minsize=LABEL_SIZE, mode="hide")
-)
-
-st.title("Unit Operations by Energy Source")
-
-# st.subheader("For Categories > 1%")
-st.plotly_chart(
-    fig,
-    use_container_width=True,
-    config={"displayModeBar": False}
-)
-
-st.subheader("Table of All Categories")
-table_df = df_agg.copy()
-
-for col in value_cols:
-    total = table_df[col].sum()
-    share_col = f"{col} Share (%)"
-    table_df[share_col] = 100 * table_df[col] / total if total > 0 else 0
-
-table_df = table_df[
-    [
-        "Category_clean",
-        "Electricity", "Electricity Share (%)",
-        "Fuel", "Fuel Share (%)",
-        "Steam", "Steam Share (%)"
-    ]
-].rename(columns={"Category_clean": "Category"})
-
-st.dataframe(table_df, use_container_width=True, hide_index=True)
+    st.error(f"App error: {e}")
