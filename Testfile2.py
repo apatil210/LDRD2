@@ -319,7 +319,7 @@ def build_bar_chart(df: pd.DataFrame):
     )
 
     fig.update_xaxes(showgrid=True, automargin=True)
-    fig.update_yaxes(categoryorder="total ascending", automargin=True, ticklabelstandoff=20)
+    fig.update_yaxes(categoryorder="total ascending", automargin=True, ticklabelstandoff=40)
 
     return fig
 
