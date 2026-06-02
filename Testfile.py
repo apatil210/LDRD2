@@ -72,6 +72,14 @@ st.markdown(
         font-style: normal;
     }
 
+    .nav-link,
+    .nav-link:visited,
+    .nav-link:hover,
+    .nav-link:active {
+        text-decoration: none;
+        color: inherit;
+    }
+
     .nav-card {
         background: #2d658f;
         border: 2px solid #1d4868;
@@ -97,14 +105,6 @@ st.markdown(
         font-size: 0.9rem;
         font-weight: 400;
         margin-top: 0.25rem;
-    }
-
-    .nav-link,
-    .nav-link:visited,
-    .nav-link:hover,
-    .nav-link:active {
-        text-decoration: none;
-        color: inherit;
     }
 
     div[data-testid="column"] {
