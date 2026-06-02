@@ -162,7 +162,7 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index(drop=True)
     )
 
-    grouped_df = grouped_df[grouped_df[pct_col] > 0].copy()
+    grouped_df = grouped_df[grouped_df[pct_col] != 0].copy()
 
     # If the source values are already percent numbers like 3.9846,
     # display them directly. If they are fractions like 0.039846,
