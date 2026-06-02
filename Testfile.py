@@ -175,9 +175,9 @@ def build_sec_donut(fact_sheet: dict):
     donut_df = pd.DataFrame({
         "SEC Type": ["SEC Electricity(GJ/t)", "SEC Fuels(GJ/t)", "SEC Steam(GJ/t)"],
         "Value": [
-            fact_sheet["SEC Electricity(GJ/t)"],
-            fact_sheet["SEC Fuels(GJ/t)"],
-            fact_sheet["SEC Steam(GJ/t)"]
+            fact_sheet["SEC Electricity"],
+            fact_sheet["SEC Fuels"],
+            fact_sheet["SEC Steam"]
         ]
     })
 
