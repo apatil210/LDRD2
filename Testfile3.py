@@ -38,12 +38,12 @@ st.markdown(
         font-weight: 500 !important;
     }
 
-    /* "Card" look for containers */
+    /* "Card" look for containers (no shadow) */
     .card {
         background-color: #ffffff;
         border-radius: 18px;
         padding: 18px 22px 22px 22px;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        box-shadow: none;
     }
 
     /* Remove default block gap a bit */
@@ -194,7 +194,6 @@ with right_col:
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader("Total Annual Energy Breakdown")
 
-# Here you can filter table_df based on `selected_unit` if you have that mapping
 st.dataframe(
     table_df,
     use_container_width=True,
