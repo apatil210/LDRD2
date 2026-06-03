@@ -135,8 +135,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("<h1>US Manufacturing Energy Classification: Unit Operations</h1>", unsafe_allow_html=True)
-st.write("Select a NAICS Level 1 sector to generate an energy fact sheet.")
+st.markdown("<h1>US Manufacturing Energy Classification: NAICS </h1>", unsafe_allow_html=True)
+st.write("Select a NAICS Level (3-digit code) sector to generate an energy fact sheet.")
 
 if missing:
     st.error("Missing required columns: " + ", ".join(missing))
