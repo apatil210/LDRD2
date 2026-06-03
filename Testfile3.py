@@ -16,7 +16,7 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     url = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
-    # Row 0 is grouping headers; row 1 has actual field names (NAICS Level 1, etc.) [file:54]
+    # Row 0 is grouping headers; row 1 has actual field names (NAICS Level 1, etc.). [file:54]
     df = pd.read_excel(
         url,
         sheet_name="Process-level data",
@@ -27,18 +27,18 @@ def load_data():
 
 df = load_data()
 
-# Uncomment once to inspect the columns if needed
-# st.write(df.columns.tolist())
-
 NAICS_COL = "NAICS Level 1"
 BAR_UNIT_COL = "Unit operation Level 2 classification"
 BAR_PCT_COL = "Percent Annual energy demand in 2022"
+COVERAGE_COL = "Percent Coverage of NAICS 3-digit Sector"
 
 if NAICS_COL not in df.columns:
     st.error(f"Column '{NAICS_COL}' not found. Columns are: {list(df.columns)}")
     st.stop()
 
+# --------------------------
 # Build NAICS Level 1 dropdown list
+# --------------------------
 naics_level1_list = (
     df[NAICS_COL]
     .dropna()
@@ -91,6 +91,18 @@ st.markdown(
         border-radius: 4px;
     }
 
+    .coverage-tag {
+        display: inline-block;
+        margin-top: 0.4rem;
+        margin-bottom: 0.8rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 999px;
+        background-color: #eef3ff;
+        color: #2f2a4f;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
     .dataframe tbody tr th {
         display: none;
     }
@@ -116,6 +128,24 @@ selected_naics1 = st.selectbox(
 )
 
 df_filtered = df[df[NAICS_COL] == selected_naics1]
+
+# --------------------------
+# Compute NAICS coverage tag
+# --------------------------
+coverage_text = None
+if COVERAGE_COL in df_filtered.columns:
+    # Use sum here; switch to max() if each NAICS appears once and you prefer that.
+    coverage_value = df_filtered[COVERAGE_COL].dropna().sum()
+    if pd.notna(coverage_value) and coverage_value != 0:
+        coverage_text = f"Total coverage: {coverage_value:.1f}% of NAICS 3‑digit sector"
+else:
+    coverage_text = None
+
+if coverage_text:
+    st.markdown(
+        f'<span class="coverage-tag">{coverage_text}</span>',
+        unsafe_allow_html=True,
+    )
 
 # --------------------------
 # Bar data from filtered rows
