@@ -171,6 +171,7 @@ with col1:
 with col2:
     st.markdown(
         '''
+        <a class="nav-link" href="https://testfile2py-ai2jtwn2rdnjkd2nhyuwpi.streamlit.app/" target="_blank">
         <div class="nav-card">
             <div>Unit Operation<br>Data</div>
             <div class="nav-subtext">[Click Here]</div>
