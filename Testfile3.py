@@ -223,7 +223,7 @@ with left_col:
             breakdown_df,
             names="Type",
             values="Value",
-            hole=0.35,
+            hole=0.55,
             color="Type",
             color_discrete_map={
                 "Annual Fuels": "#f7901d",
