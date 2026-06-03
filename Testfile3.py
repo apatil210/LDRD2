@@ -2,9 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# --------------------------
-# Page config and THEME
-# --------------------------
 st.set_page_config(
     page_title="US Manufacturing Energy Classification: Unit Operations",
     layout="wide",
@@ -16,31 +13,29 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     url = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
-    # If your sheet has multi-row headers, use header=None and fix later.
-    df = pd.read_excel(url, sheet_name="Process-level data")
-    # Strip whitespace from column names
-    df.columns = df.columns.map(lambda c: str(c).strip())
+    df = pd.read_excel(
+        url,
+        sheet_name="Process-level data"  # this is the sheet that has NAICS Level 1
+    )
+    # Make sure all column names are strings
+    df.columns = df.columns.map(str)
     return df
 
 df = load_data()
 
-# Debug helper: show the columns once so you can verify names
+# Uncomment this line once to see what Streamlit is actually reading:
 # st.write(df.columns.tolist())
 
-# Try to find the NAICS Level 1 column by a contains match
-naics1_col = None
-for col in df.columns:
-    if "NAICS Level 1" in str(col):
-        naics1_col = col
-        break
+# Use the exact header name from the file
+NAICS_COL = "NAICS Level 1"
 
-if naics1_col is None:
-    st.error("Could not find a column containing 'NAICS Level 1' in the data.")
+if NAICS_COL not in df.columns:
+    st.error(f"Column '{NAICS_COL}' not found. Columns are: {list(df.columns)}")
     st.stop()
 
-# Build NAICS Level 1 dropdown list from that column
+# Build NAICS Level 1 dropdown list
 naics_level1_list = (
-    df[naics1_col]
+    df[NAICS_COL]
     .dropna()
     .drop_duplicates()
     .sort_values()
@@ -48,7 +43,7 @@ naics_level1_list = (
 )
 
 # --------------------------
-# Custom CSS (no shadows, rectangular selectbox)
+# Custom CSS
 # --------------------------
 st.markdown(
     """
@@ -57,40 +52,33 @@ st.markdown(
         font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
                      "Segoe UI", sans-serif;
     }
-
     h1 {
         font-weight: 700 !important;
         color: #2f2a4f !important;
         letter-spacing: 0.02em;
     }
-
     h2, h3 {
         color: #2f2a4f !important;
         font-weight: 600 !important;
     }
-
     label[data-baseweb="typography"] {
         color: #5b5873 !important;
         font-weight: 500 !important;
     }
-
     .card {
         background-color: #ffffff;
         border-radius: 18px;
         padding: 18px 22px 22px 22px;
         box-shadow: none;
     }
-
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 2rem;
         max-width: 1200px;
     }
-
     .stSelectbox > div > div {
         border-radius: 4px;
     }
-
     .dataframe tbody tr th {
         display: none;
     }
@@ -100,7 +88,7 @@ st.markdown(
 )
 
 # --------------------------
-# Title + NAICS Level 1 filter
+# Title + NAICS filter
 # --------------------------
 st.markdown(
     "<h1>US Manufacturing Energy Classification: Unit Operations</h1>",
@@ -115,36 +103,26 @@ selected_naics1 = st.selectbox(
     index=0,
 )
 
-# Filter the dataframe by selected NAICS Level 1
-df_filtered = df[df[naics1_col] == selected_naics1]
+df_filtered = df[df[NAICS_COL] == selected_naics1]
 
 # --------------------------
-# Build bar data (same as before)
+# Bar data from filtered rows
 # --------------------------
-if (
-    "Unit operation Level 2 classification" in df_filtered.columns
-    and "Percent Annual energy demand in 2022" in df_filtered.columns
-):
+BAR_UNIT_COL = "Unit operation Level 2 classification"
+BAR_PCT_COL = "Percent Annual energy demand in 2022"
+
+if BAR_UNIT_COL in df_filtered.columns and BAR_PCT_COL in df_filtered.columns:
     bar_df = (
-        df_filtered[
-            [
-                "Unit operation Level 2 classification",
-                "Percent Annual energy demand in 2022",
-            ]
-        ]
+        df_filtered[[BAR_UNIT_COL, BAR_PCT_COL]]
         .dropna()
-        .groupby("Unit operation Level 2 classification", as_index=False)
+        .groupby(BAR_UNIT_COL, as_index=False)
         .sum()
-        .rename(
-            columns={
-                "Unit operation Level 2 classification": "Unit Operation",
-                "Percent Annual energy demand in 2022": "Percent Energy",
-            }
-        )
+        .rename(columns={BAR_UNIT_COL: "Unit Operation", BAR_PCT_COL: "Percent Energy"})
     )
 else:
     bar_df = pd.DataFrame(columns=["Unit Operation", "Percent Energy"])
 
+# Simple placeholder donut data
 breakdown_df = pd.DataFrame(
     {
         "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
@@ -152,6 +130,9 @@ breakdown_df = pd.DataFrame(
     }
 )
 
+# --------------------------
+# Layout: donut + bar
+# --------------------------
 left_col, right_col = st.columns([1.05, 1.15])
 
 with left_col:
@@ -206,6 +187,9 @@ with right_col:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+# --------------------------
+# Bottom table – fact sheet
+# --------------------------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Fact Sheet – {selected_naics1}")
 st.dataframe(df_filtered, use_container_width=True)
