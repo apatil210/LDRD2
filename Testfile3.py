@@ -11,10 +11,9 @@ URL = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS
 SHEET_NAME = "Process-level data"
 
 COLS = {
-    "naics": "NAICS Level 1",
-    "unit_l2": "Unit operation (Level 2 classification)",
-    "pct_energy": "Percent Annual energy demand in 2022",
-    "coverage": "Percent Coverage of NAICS (3-digit) Sector",
+    "naics_l1": "NAICS Level 1",
+    "naics_l2": "NAICS Level 2",
+    "coverage": "Percent Coverage of NAICS 3-digit Sector",
     "annual_energy": "Annual energy demand in 2022",
     "annual_electricity": "Annual electricity demand in 2022",
     "annual_fuels": "Annual fuels demand in 2022",
@@ -65,9 +64,8 @@ if missing:
     st.write("Available columns:", list(df.columns))
     st.stop()
 
-naics_col = cols["naics"]
-unit_l2_col = cols["unit_l2"]
-pct_energy_col = cols["pct_energy"]
+naics_l1_col = cols["naics_l1"]
+naics_l2_col = cols["naics_l2"]
 coverage_col = cols["coverage"]
 annual_energy_col = cols["annual_energy"]
 annual_electricity_col = cols["annual_electricity"]
@@ -129,7 +127,7 @@ st.markdown(
 st.write("Select a NAICS Level 1 sector to generate an energy fact sheet.")
 
 naics_options = (
-    df[naics_col]
+    df[naics_l1_col]
     .dropna()
     .astype(str)
     .drop_duplicates()
@@ -139,7 +137,7 @@ naics_options = (
 
 selected_naics = st.selectbox("NAICS Level 1", naics_options, index=0)
 
-df_filtered = df[df[naics_col].astype(str) == str(selected_naics)].copy()
+df_filtered = df[df[naics_l1_col].astype(str) == str(selected_naics)].copy()
 
 coverage_values = pd.to_numeric(df_filtered[coverage_col], errors="coerce").dropna()
 coverage = coverage_values.max() if not coverage_values.empty else None
@@ -177,15 +175,15 @@ breakdown_df = pd.DataFrame(
 )
 breakdown_df = breakdown_df[breakdown_df["Value"] > 0].copy()
 
-bar_df = df_filtered[[unit_l2_col, pct_energy_col]].copy()
-bar_df[pct_energy_col] = pd.to_numeric(bar_df[pct_energy_col], errors="coerce")
+bar_df = df_filtered[[naics_l2_col, annual_energy_col]].copy()
+bar_df[annual_energy_col] = pd.to_numeric(bar_df[annual_energy_col], errors="coerce")
 bar_df = (
-    bar_df.dropna(subset=[unit_l2_col, pct_energy_col])
-    .groupby(unit_l2_col, as_index=False)[pct_energy_col]
+    bar_df.dropna(subset=[naics_l2_col, annual_energy_col])
+    .groupby(naics_l2_col, as_index=False)[annual_energy_col]
     .sum()
-    .rename(columns={unit_l2_col: "Unit Operation", pct_energy_col: "Percent Energy"})
+    .rename(columns={naics_l2_col: "NAICS Level 2", annual_energy_col: "Annual Energy"})
 )
-bar_df = bar_df[bar_df["Percent Energy"] > 0].copy()
+bar_df = bar_df[bar_df["Annual Energy"] > 0].copy()
 
 left_col, right_col = st.columns([1.0, 1.2])
 
@@ -216,32 +214,31 @@ with left_col:
 
 with right_col:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Percent Annual Energy by Unit Operation")
+    st.subheader("Annual Energy by NAICS Level 2")
 
     if not bar_df.empty:
-        bar_df = bar_df.sort_values("Percent Energy", ascending=True)
+        bar_df = bar_df.sort_values("Annual Energy", ascending=True)
         fig_bar = px.bar(
             bar_df,
-            x="Percent Energy",
-            y="Unit Operation",
+            x="Annual Energy",
+            y="NAICS Level 2",
             orientation="h",
-            text="Percent Energy",
+            text="Annual Energy",
         )
         fig_bar.update_traces(
             marker_color="#006b6b",
-            texttemplate="%{text:.1%}",
+            texttemplate="%{text:.2f}",
             textposition="outside",
             cliponaxis=False,
         )
         fig_bar.update_layout(
-            xaxis_title="Percent of Annual Energy",
+            xaxis_title="Annual Energy Demand in 2022 (PJ)",
             yaxis_title="",
-            xaxis_tickformat=".0%",
             margin=dict(t=20, b=20, l=80, r=70),
         )
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
-        st.info("No unit-operation energy data is available for this selection.")
+        st.info("No NAICS Level 2 annual energy data is available for this selection.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
