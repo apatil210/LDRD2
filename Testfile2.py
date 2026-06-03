@@ -185,7 +185,7 @@ def prepare_bar_data(df: pd.DataFrame) -> pd.DataFrame:
 
 def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     l2_col = find_matching_column(df, COL_L2)
-    l3_col = find_matching_column(df, COL_L3)
+    l3_col = find_matching_column(df, "Industrial process")
     annual_prod_col = find_matching_column(df, COL_ANNUAL_PRODUCTION)
     annual_energy_col = find_matching_column(df, COL_ANNUAL_ENERGY)
 
