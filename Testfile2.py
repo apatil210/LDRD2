@@ -420,14 +420,14 @@ try:
 
         if fact_sheet is not None:
             metric_col1, metric_col2 = st.columns(2)
-            metric_col1.metric(
-                "Annual Production (tonne/yr)",
-                f"{fact_sheet['Annual Production']:.2f}"
-            )
-            metric_col2.metric(
-                "Annual Energy (PJ/yr)",
-                f"{fact_sheet['Annual Energy']:.2f}"
-            )
+           # metric_col1.metric(
+           #     "Annual Production (tonne/yr)",
+          #      f"{fact_sheet['Annual Production']:.2f}"
+          #  )
+           # metric_col2.metric(
+          #      "Annual Energy (PJ/yr)",
+          #      f"{fact_sheet['Annual Energy']:.2f}"
+          #  )
 
             st.subheader("Total Annual Energy Breakdown")
             donut_fig = build_annual_energy_donut(fact_sheet)
