@@ -2,66 +2,202 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="NAICS Level 1 Coverage Chart", layout="wide")
-
-st.title("Bar Chart: NAICS Level 1 vs Aggregate Percent Coverage")
-
-github_url = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20Data%20for%20NAICS.xlsx"
-
-@st.cache_data
-def load_data(url):
-    df = pd.read_excel(url, sheet_name="Process-level data")
-    return df
-
-df = load_data(github_url)
-
-st.subheader("Raw Data Preview")
-st.dataframe(df.head())
-
-# Column B = NAICS Level 1
-# Column AM = Percent Coverage of NAICS 3-digit Sector
-naics_col = df.columns[1]
-coverage_col = df.columns[38]
-
-plot_df = df[[naics_col, coverage_col]].copy()
-plot_df.columns = ["NAICS Level 1", "Percent Coverage"]
-
-plot_df["Percent Coverage"] = pd.to_numeric(plot_df["Percent Coverage"], errors="coerce")
-plot_df = plot_df.dropna(subset=["NAICS Level 1", "Percent Coverage"])
-
-agg_df = (
-    plot_df.groupby("NAICS Level 1", as_index=False)["Percent Coverage"]
-    .sum()
-    .sort_values("Percent Coverage", ascending=False)
+# --------------------------
+# Page config and THEME
+# --------------------------
+st.set_page_config(
+    page_title="US Manufacturing Energy Classification: Unit Operations",
+    layout="wide",
 )
 
-st.subheader("Aggregated Data")
-st.dataframe(agg_df)
+# Custom CSS to mimic the screenshot theme
+st.markdown(
+    """
+    <style>
+    /* Global background */
+    .stApp {
+        background-color: #f7f5fb;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-fig = px.bar(
-    agg_df,
-    x="NAICS Level 1",
-    y="Percent Coverage",
-    title="Aggregate Sum of Percent Coverage by NAICS Level 1",
-    labels={
-        "NAICS Level 1": "NAICS Level 1",
-        "Percent Coverage": "Sum of Percent Coverage"
-    },
-    text="Percent Coverage"
+    /* Main title */
+    h1 {
+        font-weight: 700 !important;
+        color: #2f2a4f !important;
+        letter-spacing: 0.02em;
+    }
+
+    /* Subheaders */
+    h2, h3 {
+        color: #2f2a4f !important;
+        font-weight: 600 !important;
+    }
+
+    /* Dropdown label */
+    label[data-baseweb="typography"] {
+        color: #5b5873 !important;
+        font-weight: 500 !important;
+    }
+
+    /* "Card" look for containers */
+    .card {
+        background-color: #ffffff;
+        border-radius: 18px;
+        padding: 18px 22px 22px 22px;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    /* Remove default block gap a bit */
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 2rem;
+        max-width: 1200px;
+    }
+
+    /* Resize selectbox padding */
+    .stSelectbox > div > div {
+        border-radius: 999px;
+    }
+
+    /* Table tweaks */
+    .dataframe tbody tr th {
+        display: none;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
-fig.update_traces(
-    texttemplate="%{y:.2%}",
-    textposition="outside",
-    hovertemplate="<b>%{x}</b><br>Percent Coverage: %{y:.2%}<extra></extra>"
+# --------------------------
+# Mock data – replace this with your real data
+# --------------------------
+unit_operations = [
+    "Cracking", "Reforming", "Distillation", "Drying", "HVAC",
+    "Reduction", "Calcination", "Hydrotreating", "Evaporation",
+    "Melting", "Blast furnace", "Pulping", "Coking", "Lighting",
+    "Electrolysis", "Hydrocracking",
+]
+percent_energy = [8.6, 8.5, 8.3, 7.7, 4.4, 3.4, 2.7, 2.5, 2.0, 1.9, 1.4, 1.2, 1.2, 1.1, 1.0, 0.9]
+
+bar_df = pd.DataFrame({"Unit Operation": unit_operations, "Percent Energy": percent_energy})
+
+# Example donut-breakdown numbers (PJ/yr)
+total_energy = 1424.44
+breakdown_df = pd.DataFrame(
+    {
+        "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
+        "Value": [0.826 * total_energy, 0.169 * total_energy, 0.0051 * total_energy],
+    }
 )
 
-fig.update_layout(
-    xaxis_title="NAICS Level 1",
-    yaxis_title="Sum of Percent Coverage (%)",
-    yaxis_tickformat=".0%",
-    xaxis_tickangle=-45,
-    height=700
+# Example fact-sheet table
+table_df = pd.DataFrame(
+    {
+        "List of Industry Application": ["Steam cracking-NGL", "Petroleum Refining"],
+        "SEC Electricity (GJ/t)": ["None", 0.0011],
+        "SEC Fuels (GJ/t)": [17.88, 0.0893],
+        "SEC Steam (GJ/t)": [1.1829, 0.0332],
+        "Efficiency": [0.9, "75–85%"],
+    }
 )
 
-st.plotly_chart(fig, use_container_width=True)
+# --------------------------
+# Title + filter row
+# --------------------------
+st.markdown(
+    "<h1>US Manufacturing Energy Classification: Unit Operations</h1>",
+    unsafe_allow_html=True,
+)
+
+st.write(
+    "Select a unit operation (Level 2 classification) to generate a fact sheet."
+)
+
+selected_unit = st.selectbox(
+    "",  # empty label to mimic screenshot
+    unit_operations,
+    index=0,
+)
+
+# --------------------------
+# Top row: donut + bar chart
+# --------------------------
+left_col, right_col = st.columns([1.05, 1.15])
+
+with left_col:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Total Annual Energy Breakdown")
+
+    # Donut chart (orange ring, white center)
+    fig_donut = px.pie(
+        breakdown_df,
+        names="Type",
+        values="Value",
+        hole=0.65,
+    )
+    fig_donut.update_traces(
+        textinfo="percent",
+        textposition="outside",
+        marker=dict(colors=["#f7901d", "#3b4f9b", "#a3d5a4"]),
+    )
+    # Center text (total)
+    fig_donut.update_layout(
+        showlegend=False,
+        annotations=[
+            dict(
+                text=f"Total (PJ/yr)<br><b>{total_energy:.2f}</b>",
+                x=0.5,
+                y=0.5,
+                font=dict(size=16, color="#333333"),
+                showarrow=False,
+            )
+        ],
+        margin=dict(t=20, b=10, l=10, r=10),
+    )
+
+    st.plotly_chart(fig_donut, use_container_width=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with right_col:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Percent Annual Energy by Unit Operation Classification")
+
+    # Horizontal bar chart with teal bars, % labels on the right
+    bar_df_sorted = bar_df.sort_values("Percent Energy", ascending=True)
+
+    fig_bar = px.bar(
+        bar_df_sorted,
+        x="Percent Energy",
+        y="Unit Operation",
+        orientation="h",
+    )
+    fig_bar.update_traces(
+        marker_color="#006b6b",
+        text=bar_df_sorted["Percent Energy"] / 100.0,
+        texttemplate="%{text:.1%}",
+        textposition="outside",
+    )
+    fig_bar.update_layout(
+        xaxis_title="Percent of Annual Energy",
+        yaxis_title="",
+        xaxis_tickformat=".0%",
+        margin=dict(t=20, b=20, l=80, r=60),
+    )
+
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# --------------------------
+# Bottom table – fact sheet
+# --------------------------
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.subheader("Total Annual Energy Breakdown")
+
+# Here you can filter table_df based on `selected_unit` if you have that mapping
+st.dataframe(
+    table_df,
+    use_container_width=True,
+)
+st.markdown("</div>", unsafe_allow_html=True)
