@@ -216,7 +216,7 @@ left_col, right_col = st.columns([1.0, 1.2])
 
 with left_col:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Annual Energy Breakdown for {selected_naics}")
+    st.subheader(f"Annual Energy Breakdown for {selected_naics}")
 
     if not breakdown_df.empty:
         fig_donut = px.pie(
