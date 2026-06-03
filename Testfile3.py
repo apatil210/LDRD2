@@ -1,87 +1,121 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from pathlib import Path
 
-st.set_page_config(page_title="US Manufacturing Energy Classification: Unit Operations", layout="wide")
+st.set_page_config(
+    page_title="US Manufacturing Energy Classification: Unit Operations",
+    layout="wide",
+)
 
+FILE_URL = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
 SHEET_NAME = "Process-level data"
-GITHUB_URL = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
-LOCAL_FILE = "Modified-Data-for-NAICS.xlsx"
+HEADER_ROW = 1
 
-EXPECTED = {
-    "naics_l1": "NAICS Level 1",
-    "naics_l2": "NAICS Level 2",
-    "coverage": "Percent Coverage of NAICS (3-digit) Sector",
-    "annual_energy": "Annual energy demand in 2022",
-    "annual_electricity": "Annual electricity demand in 2022",
-    "annual_fuels": "Annual fuels demand in 2022",
-    "annual_steam": "Annual fuels or electricity for steam or steam from CHP demand in 2022",
-}
+NAICS_COL = "NAICS Level 1"
+NAICS2_COL = "NAICS Level 2"
+PROCESS_COL = "Industrial process"
+UNIT_L1_COL = "Unit operation Level 1 classification"
+UNIT_L2_COL = "Unit operation Level 2 classification"
+ENERGY_PCT_COL = "Percent Annual energy demand in 2022"
+COVERAGE_COL = "Percent Coverage of NAICS 3-digit Sector"
+TOTAL_ENERGY_COL = "Annual energy demand in 2022"
+ELEC_COL = "Annual electricity demand in 2022"
+FUELS_COL = "Annual fuels demand in 2022"
+STEAM_COL = "Annual fuels or electricity for steam or steam from CHP demand in 2022"
 
-def norm(x):
-    return " ".join(str(x).replace("\n", " ").strip().split()).lower()
+REQUIRED_COLUMNS = [
+    NAICS_COL,
+    UNIT_L2_COL,
+    ENERGY_PCT_COL,
+    TOTAL_ENERGY_COL,
+    ELEC_COL,
+    FUELS_COL,
+    STEAM_COL,
+]
+
 
 @st.cache_data
 def load_data():
-    source = LOCAL_FILE if Path(LOCAL_FILE).exists() else GITHUB_URL
-    df = pd.read_excel(source, sheet_name=SHEET_NAME, header=1)
-    df.columns = [str(c).strip() for c in df.columns]
-
-    if len(df) > 0:
-        first_row = " ".join([str(x) for x in df.iloc[0].fillna("").tolist()])
-        if "GJ/FU" in first_row or "PJ" in first_row or "bara" in first_row:
-            df = df.iloc[1:].copy()
-
-    df = df.dropna(axis=1, how="all").reset_index(drop=True)
+    df = pd.read_excel(FILE_URL, sheet_name=SHEET_NAME, header=HEADER_ROW)
+    df.columns = [str(col).strip() for col in df.columns]
     return df
 
-def resolve_columns(df):
-    norm_map = {norm(c): c for c in df.columns}
-    resolved, missing = {}, []
 
-    for k, expected in EXPECTED.items():
-        found = norm_map.get(norm(expected))
-        if found is None:
-            for c in df.columns:
-                cn = norm(c)
-                if k == "coverage" and "percent coverage of naics" in cn and "sector" in cn:
-                    found = c
-                    break
-                if k == "naics_l2" and cn.startswith("naics level 2"):
-                    found = c
-                    break
-                if k == "naics_l1" and cn.startswith("naics level 1"):
-                    found = c
-                    break
-                if k == "annual_energy" and cn.startswith("annual energy demand in 2022"):
-                    found = c
-                    break
-                if k == "annual_electricity" and cn.startswith("annual electricity demand in 2022"):
-                    found = c
-                    break
-                if k == "annual_fuels" and cn.startswith("annual fuels demand in 2022"):
-                    found = c
-                    break
-                if k == "annual_steam" and "annual fuels or electricity for steam" in cn and "demand in 2022" in cn:
-                    found = c
-                    break
+def resolve_column(df, name):
+    target = str(name).strip().lower()
+    for col in df.columns:
+        if str(col).strip().lower() == target:
+            return col
+    return None
 
-        if found is None:
-            missing.append(expected)
-        else:
-            resolved[k] = found
 
-    return resolved, missing
+def to_num(series):
+    return pd.to_numeric(series, errors="coerce")
 
-def num(series):
-    return pd.to_numeric(series, errors="coerce").fillna(0)
 
-def fmt_pj(x):
-    return f"{x:,.2f} PJ"
+def fmt_pct(v):
+    return f"{v:.2%}"
 
-df = load_data()
-cols, missing = resolve_columns(df)
+
+def fmt_pj(v):
+    return f"{v:,.2f} PJ"
+
+
+def safe_sum(df, col):
+    if col is None or col not in df.columns:
+        return 0.0
+    return to_num(df[col]).fillna(0).sum()
+
+
+def safe_max(df, col):
+    if col is None or col not in df.columns:
+        return None
+    s = to_num(df[col]).dropna()
+    return None if s.empty else s.max()
+
+
+def get_bar_df(df_filtered, group_col):
+    if group_col is None or ENERGY_PCT_COL not in df_filtered.columns:
+        return pd.DataFrame(columns=["Category", "Percent Energy"])
+
+    tmp = df_filtered[[group_col, ENERGY_PCT_COL]].copy()
+    tmp[ENERGY_PCT_COL] = to_num(tmp[ENERGY_PCT_COL])
+
+    out = (
+        tmp.dropna(subset=[group_col, ENERGY_PCT_COL])
+        .groupby(group_col, as_index=False)[ENERGY_PCT_COL]
+        .sum()
+        .rename(columns={group_col: "Category", ENERGY_PCT_COL: "Percent Energy"})
+        .sort_values("Percent Energy", ascending=True)
+    )
+
+    return out
+
+
+def get_breakdown_df(df_filtered):
+    fuels = safe_sum(df_filtered, FUELS_COL)
+    steam = safe_sum(df_filtered, STEAM_COL)
+    elec = safe_sum(df_filtered, ELEC_COL)
+
+    out = pd.DataFrame(
+        {
+            "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
+            "Value": [fuels, steam, elec],
+        }
+    )
+
+    out = out[out["Value"] > 0].copy()
+
+    if out.empty:
+        out = pd.DataFrame(
+            {
+                "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
+                "Value": [0.0, 0.0, 0.0],
+            }
+        )
+
+    return out
+
 
 st.markdown(
     """
@@ -90,39 +124,64 @@ st.markdown(
         font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background-color: #f8fafc;
     }
+
     .block-container {
-        padding-top: 1.3rem;
+        padding-top: 1.25rem;
         padding-bottom: 2rem;
-        max-width: 1250px;
+        max-width: 1280px;
     }
-    h1, h2, h3 {
+
+    h1 {
+        font-weight: 700 !important;
         color: #1e293b !important;
+        letter-spacing: 0.01em;
     }
+
+    h2, h3 {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+
     .card {
         background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 16px;
-        padding: 18px 20px;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 18px 20px 20px 20px;
         margin-bottom: 1rem;
     }
-    .metric-label {
-        font-size: 0.92rem;
-        color: #64748b;
-        margin-bottom: 0.15rem;
+
+    .metric-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 16px 18px;
+        margin-bottom: 1rem;
     }
+
+    .metric-label {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 0.2rem;
+    }
+
     .metric-value {
+        color: #0f172a;
         font-size: 1.35rem;
         font-weight: 700;
-        color: #0f172a;
     }
+
     .coverage-label {
-        margin-top: 0.35rem;
+        margin-top: 0.2rem;
         margin-bottom: 1rem;
-        font-size: 0.98rem;
-        color: #0f172a;
+        color: #334155;
         font-weight: 600;
+        font-size: 0.98rem;
     }
+
+    .stSelectbox > div > div {
+        border-radius: 8px;
+    }
+
     .dataframe tbody tr th {
         display: none;
     }
@@ -131,128 +190,236 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("<h1>US Manufacturing Energy Classification: Unit Operations</h1>", unsafe_allow_html=True)
-st.write("Select a NAICS Level 1 sector to generate an energy fact sheet.")
+df = load_data()
 
+resolved = {name: resolve_column(df, name) for name in [
+    NAICS_COL,
+    NAICS2_COL,
+    PROCESS_COL,
+    UNIT_L1_COL,
+    UNIT_L2_COL,
+    ENERGY_PCT_COL,
+    COVERAGE_COL,
+    TOTAL_ENERGY_COL,
+    ELEC_COL,
+    FUELS_COL,
+    STEAM_COL,
+]}
+
+missing = [c for c in REQUIRED_COLUMNS if resolved[c] is None]
 if missing:
     st.error("Missing required columns: " + ", ".join(missing))
-    st.write("Available columns:", list(df.columns))
     st.stop()
 
-naics_l1_col = cols["naics_l1"]
-naics_l2_col = cols["naics_l2"]
-coverage_col = cols["coverage"]
-annual_energy_col = cols["annual_energy"]
-annual_electricity_col = cols["annual_electricity"]
-annual_fuels_col = cols["annual_fuels"]
-annual_steam_col = cols["annual_steam"]
-
-naics_options = sorted(df[naics_l1_col].dropna().astype(str).drop_duplicates().tolist())
-selected_naics = st.selectbox("NAICS Level 1", naics_options, index=0)
-
-df_filtered = df[df[naics_l1_col].astype(str) == str(selected_naics)].copy()
-
-coverage_values = pd.to_numeric(df_filtered[coverage_col], errors="coerce").dropna()
-coverage = coverage_values.max() if not coverage_values.empty else None
-coverage_text = f"{coverage:.2%}" if coverage is not None else "N/A"
+NAICS_COL = resolved[NAICS_COL]
+NAICS2_COL = resolved[NAICS2_COL]
+PROCESS_COL = resolved[PROCESS_COL]
+UNIT_L1_COL = resolved[UNIT_L1_COL]
+UNIT_L2_COL = resolved[UNIT_L2_COL]
+ENERGY_PCT_COL = resolved[ENERGY_PCT_COL]
+COVERAGE_COL = resolved[COVERAGE_COL]
+TOTAL_ENERGY_COL = resolved[TOTAL_ENERGY_COL]
+ELEC_COL = resolved[ELEC_COL]
+FUELS_COL = resolved[FUELS_COL]
+STEAM_COL = resolved[STEAM_COL]
 
 st.markdown(
-    f'<div class="coverage-label">Total Sector Coverage of {selected_naics}: {coverage_text}</div>',
+    "<h1>US Manufacturing Energy Classification: Unit Operations</h1>",
     unsafe_allow_html=True,
 )
 
-total_energy = num(df_filtered[annual_energy_col]).sum()
-total_electricity = num(df_filtered[annual_electricity_col]).sum()
-total_fuels = num(df_filtered[annual_fuels_col]).sum()
-total_steam = num(df_filtered[annual_steam_col]).sum()
+st.write("Select a NAICS Level 1 sector to generate a fact sheet from the process-level workbook.")
+
+naics_options = (
+    df[NAICS_COL]
+    .dropna()
+    .astype(str)
+    .drop_duplicates()
+    .sort_values()
+    .tolist()
+)
+
+selected_naics1 = st.selectbox("NAICS Level 1", naics_options, index=0)
+
+df_sector = df[df[NAICS_COL].astype(str) == str(selected_naics1)].copy()
+
+coverage_val = safe_max(df_sector, COVERAGE_COL)
+coverage_text = fmt_pct(coverage_val) if coverage_val is not None else "N/A"
+
+st.markdown(
+    f'<div class="coverage-label">Total Sector Coverage of {selected_naics1}: {coverage_text}</div>',
+    unsafe_allow_html=True,
+)
+
+total_energy = safe_sum(df_sector, TOTAL_ENERGY_COL)
+total_electricity = safe_sum(df_sector, ELEC_COL)
+total_fuels = safe_sum(df_sector, FUELS_COL)
+total_steam = safe_sum(df_sector, STEAM_COL)
 
 m1, m2, m3, m4 = st.columns(4)
-for col, label, value in [
-    (m1, "Total annual energy", total_energy),
-    (m2, "Annual electricity", total_electricity),
-    (m3, "Annual fuels", total_fuels),
-    (m4, "Annual steam", total_steam),
-]:
-    with col:
-        st.markdown(
-            f'<div class="card"><div class="metric-label">{label}</div><div class="metric-value">{fmt_pj(value)}</div></div>',
-            unsafe_allow_html=True,
-        )
 
-breakdown_df = pd.DataFrame(
-    {
-        "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
-        "Value": [total_fuels, total_steam, total_electricity],
-    }
-)
-breakdown_df = breakdown_df[breakdown_df["Value"] > 0].copy()
+with m1:
+    st.markdown(
+        f'<div class="metric-card"><div class="metric-label">Total annual energy</div><div class="metric-value">{fmt_pj(total_energy)}</div></div>',
+        unsafe_allow_html=True,
+    )
 
-bar_df = df_filtered[[naics_l2_col, annual_energy_col]].copy()
-bar_df[annual_energy_col] = pd.to_numeric(bar_df[annual_energy_col], errors="coerce")
-bar_df = (
-    bar_df.dropna(subset=[naics_l2_col, annual_energy_col])
-    .groupby(naics_l2_col, as_index=False)[annual_energy_col]
-    .sum()
-    .rename(columns={naics_l2_col: "NAICS Level 2", annual_energy_col: "Annual Energy"})
-)
-bar_df = bar_df[bar_df["Annual Energy"] > 0].copy()
+with m2:
+    st.markdown(
+        f'<div class="metric-card"><div class="metric-label">Annual electricity</div><div class="metric-value">{fmt_pj(total_electricity)}</div></div>',
+        unsafe_allow_html=True,
+    )
 
-left_col, right_col = st.columns([1.0, 1.2])
+with m3:
+    st.markdown(
+        f'<div class="metric-card"><div class="metric-label">Annual fuels</div><div class="metric-value">{fmt_pj(total_fuels)}</div></div>',
+        unsafe_allow_html=True,
+    )
 
-with left_col:
+with m4:
+    st.markdown(
+        f'<div class="metric-card"><div class="metric-label">Annual steam</div><div class="metric-value">{fmt_pj(total_steam)}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+sidebar_col, main_col = st.columns([0.9, 3.1])
+
+with sidebar_col:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Total Annual Energy Breakdown")
+    st.subheader("Filters")
 
-    if not breakdown_df.empty:
+    if NAICS2_COL is not None:
+        naics2_options = (
+            df_sector[NAICS2_COL]
+            .dropna()
+            .astype(str)
+            .drop_duplicates()
+            .sort_values()
+            .tolist()
+        )
+        naics2_choice = st.selectbox("NAICS Level 2", ["All"] + naics2_options, index=0)
+    else:
+        naics2_choice = "All"
+
+    chart_level = st.radio(
+        "Bar chart grouping",
+        ["Unit operation Level 2", "Unit operation Level 1", "Industrial process"],
+        index=0,
+    )
+
+    show_raw = st.checkbox("Show raw filtered table", value=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+if naics2_choice != "All" and NAICS2_COL is not None:
+    df_filtered = df_sector[df_sector[NAICS2_COL].astype(str) == str(naics2_choice)].copy()
+else:
+    df_filtered = df_sector.copy()
+
+if chart_level == "Unit operation Level 1":
+    chart_col = UNIT_L1_COL
+    chart_title = "Percent Annual Energy by Unit Operation Level 1"
+elif chart_level == "Industrial process":
+    chart_col = PROCESS_COL
+    chart_title = "Percent Annual Energy by Industrial Process"
+else:
+    chart_col = UNIT_L2_COL
+    chart_title = "Percent Annual Energy by Unit Operation"
+
+bar_df = get_bar_df(df_filtered, chart_col)
+breakdown_df = get_breakdown_df(df_filtered)
+
+with main_col:
+    left_col, right_col = st.columns([1.0, 1.2])
+
+    with left_col:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("Total Annual Energy Breakdown")
+
         fig_donut = px.pie(
             breakdown_df,
             names="Type",
             values="Value",
-            hole=0.62,
+            hole=0.64,
             color="Type",
             color_discrete_map={
                 "Annual Fuels": "#f7901d",
                 "Annual Steam": "#3b82f6",
-                "Annual Electricity": "#0f766e",
+                "Annual Electricity": "#006b6b",
             },
         )
-        fig_donut.update_traces(textinfo="percent+label", textposition="outside")
-        fig_donut.update_layout(showlegend=False, margin=dict(t=20, b=10, l=10, r=10))
-        st.plotly_chart(fig_donut, use_container_width=True)
-    else:
-        st.info("No annual energy breakdown is available for this selection.")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with right_col:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Annual Energy by NAICS Level 2")
-
-    if not bar_df.empty:
-        bar_df = bar_df.sort_values("Annual Energy", ascending=True)
-        fig_bar = px.bar(
-            bar_df,
-            x="Annual Energy",
-            y="NAICS Level 2",
-            orientation="h",
-            text="Annual Energy",
-        )
-        fig_bar.update_traces(
-            marker_color="#006b6b",
-            texttemplate="%{text:.2f}",
+        fig_donut.update_traces(
+            textinfo="percent+label",
             textposition="outside",
-            cliponaxis=False,
         )
-        fig_bar.update_layout(
-            xaxis_title="Annual Energy Demand in 2022 (PJ)",
-            yaxis_title="",
-            margin=dict(t=20, b=20, l=80, r=70),
+        fig_donut.update_layout(
+            showlegend=False,
+            margin=dict(t=20, b=10, l=10, r=10),
         )
-        st.plotly_chart(fig_bar, use_container_width=True)
-    else:
-        st.info("No NAICS Level 2 annual energy data is available for this selection.")
-    st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown('<div class="card">', unsafe_allow_html=True)
-st.subheader(f"Fact Sheet – {selected_naics}")
-st.dataframe(df_filtered, use_container_width=True, height=500)
-st.markdown("</div>", unsafe_allow_html=True)
+        st.plotly_chart(fig_donut, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with right_col:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader(chart_title)
+
+        if not bar_df.empty:
+            fig_bar = px.bar(
+                bar_df,
+                x="Percent Energy",
+                y="Category",
+                orientation="h",
+                text="Percent Energy",
+            )
+            fig_bar.update_traces(
+                marker_color="#006b6b",
+                texttemplate="%{text:.1%}",
+                textposition="outside",
+                cliponaxis=False,
+            )
+            fig_bar.update_layout(
+                xaxis_title="Percent of Annual Energy",
+                yaxis_title="",
+                xaxis_tickformat=".0%",
+                margin=dict(t=20, b=20, l=90, r=70),
+            )
+
+            st.plotly_chart(fig_bar, use_container_width=True)
+        else:
+            st.info("No positive annual energy share data is available for the selected filters.")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Filtered Fact Sheet")
+
+    summary_cols = [
+        c for c in [
+            NAICS2_COL,
+            NAICS_COL,
+            PROCESS_COL,
+            UNIT_L1_COL,
+            UNIT_L2_COL,
+            TOTAL_ENERGY_COL,
+            ELEC_COL,
+            FUELS_COL,
+            STEAM_COL,
+            ENERGY_PCT_COL,
+            COVERAGE_COL,
+        ] if c is not None and c in df_filtered.columns
+    ]
+
+    display_df = df_filtered[summary_cols].copy() if summary_cols else df_filtered.copy()
+
+    st.dataframe(display_df, use_container_width=True, height=520)
+
+    csv_data = display_df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        "Download filtered fact sheet as CSV",
+        data=csv_data,
+        file_name="filtered_fact_sheet.csv",
+        mime="text/csv",
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+    
