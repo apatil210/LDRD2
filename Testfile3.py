@@ -10,7 +10,6 @@ github_url = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20
 
 @st.cache_data
 def load_data(url):
-    # Read the specific sheet that contains NAICS Level 1 and Percent Coverage
     df = pd.read_excel(url, sheet_name="Process-level data")
     return df
 
@@ -24,17 +23,12 @@ st.dataframe(df.head())
 naics_col = df.columns[1]
 coverage_col = df.columns[38]
 
-# Keep only needed columns
 plot_df = df[[naics_col, coverage_col]].copy()
 plot_df.columns = ["NAICS Level 1", "Percent Coverage"]
 
-# Convert coverage to numeric
 plot_df["Percent Coverage"] = pd.to_numeric(plot_df["Percent Coverage"], errors="coerce")
-
-# Drop blank rows
 plot_df = plot_df.dropna(subset=["NAICS Level 1", "Percent Coverage"])
 
-# Aggregate by NAICS Level 1
 agg_df = (
     plot_df.groupby("NAICS Level 1", as_index=False)["Percent Coverage"]
     .sum()
@@ -56,11 +50,16 @@ fig = px.bar(
     text="Percent Coverage"
 )
 
-fig.update_traces(texttemplate="%{text:.4f}", textposition="outside")
+fig.update_traces(
+    texttemplate="%{y:.2%}",
+    textposition="outside",
+    hovertemplate="<b>%{x}</b><br>Percent Coverage: %{y:.2%}<extra></extra>"
+)
 
 fig.update_layout(
     xaxis_title="NAICS Level 1",
-    yaxis_title="Sum of Percent Coverage",
+    yaxis_title="Sum of Percent Coverage (%)",
+    yaxis_tickformat=".0%",
     xaxis_tickangle=-45,
     height=700
 )
