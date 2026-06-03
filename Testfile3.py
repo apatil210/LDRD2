@@ -16,14 +16,31 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     url = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
+    # If your sheet has multi-row headers, use header=None and fix later.
     df = pd.read_excel(url, sheet_name="Process-level data")
+    # Strip whitespace from column names
+    df.columns = df.columns.map(lambda c: str(c).strip())
     return df
 
 df = load_data()
 
-# Build NAICS Level 1 dropdown list (Column B)
+# Debug helper: show the columns once so you can verify names
+# st.write(df.columns.tolist())
+
+# Try to find the NAICS Level 1 column by a contains match
+naics1_col = None
+for col in df.columns:
+    if "NAICS Level 1" in str(col):
+        naics1_col = col
+        break
+
+if naics1_col is None:
+    st.error("Could not find a column containing 'NAICS Level 1' in the data.")
+    st.stop()
+
+# Build NAICS Level 1 dropdown list from that column
 naics_level1_list = (
-    df["NAICS Level 1"]
+    df[naics1_col]
     .dropna()
     .drop_duplicates()
     .sort_values()
@@ -36,32 +53,27 @@ naics_level1_list = (
 st.markdown(
     """
     <style>
-    /* Global font */
     .stApp {
         font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
                      "Segoe UI", sans-serif;
     }
 
-    /* Main title */
     h1 {
         font-weight: 700 !important;
         color: #2f2a4f !important;
         letter-spacing: 0.02em;
     }
 
-    /* Subheaders */
     h2, h3 {
         color: #2f2a4f !important;
         font-weight: 600 !important;
     }
 
-    /* Dropdown label */
     label[data-baseweb="typography"] {
         color: #5b5873 !important;
         font-weight: 500 !important;
     }
 
-    /* Card containers – no shadow */
     .card {
         background-color: #ffffff;
         border-radius: 18px;
@@ -69,19 +81,16 @@ st.markdown(
         box-shadow: none;
     }
 
-    /* Page padding */
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 2rem;
         max-width: 1200px;
     }
 
-    /* Make selectbox rectangular */
     .stSelectbox > div > div {
         border-radius: 4px;
     }
 
-    /* Table tweaks */
     .dataframe tbody tr th {
         display: none;
     }
@@ -107,11 +116,10 @@ selected_naics1 = st.selectbox(
 )
 
 # Filter the dataframe by selected NAICS Level 1
-df_filtered = df[df["NAICS Level 1"] == selected_naics1]
+df_filtered = df[df[naics1_col] == selected_naics1]
 
 # --------------------------
-# Build bar data from filtered rows
-# using Unit operation Level 2 + Percent Annual energy demand in 2022
+# Build bar data (same as before)
 # --------------------------
 if (
     "Unit operation Level 2 classification" in df_filtered.columns
@@ -137,7 +145,6 @@ if (
 else:
     bar_df = pd.DataFrame(columns=["Unit Operation", "Percent Energy"])
 
-# Example donut data (placeholder – adjust fields if you have real ones)
 breakdown_df = pd.DataFrame(
     {
         "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
@@ -145,9 +152,6 @@ breakdown_df = pd.DataFrame(
     }
 )
 
-# --------------------------
-# Top row: donut + bar chart
-# --------------------------
 left_col, right_col = st.columns([1.05, 1.15])
 
 with left_col:
@@ -169,9 +173,7 @@ with left_col:
         showlegend=False,
         margin=dict(t=20, b=10, l=10, r=10),
     )
-
     st.plotly_chart(fig_donut, use_container_width=True)
-
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right_col:
@@ -180,7 +182,6 @@ with right_col:
 
     if not bar_df.empty:
         bar_df_sorted = bar_df.sort_values("Percent Energy", ascending=True)
-
         fig_bar = px.bar(
             bar_df_sorted,
             x="Percent Energy",
@@ -199,21 +200,13 @@ with right_col:
             xaxis_tickformat=".0%",
             margin=dict(t=20, b=20, l=80, r=60),
         )
-
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
         st.write("No energy data available for this NAICS Level 1 selection.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --------------------------
-# Bottom table – fact sheet
-# --------------------------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Fact Sheet – {selected_naics1}")
-
-st.dataframe(
-    df_filtered,
-    use_container_width=True,
-)
+st.dataframe(df_filtered, use_container_width=True)
 st.markdown("</div>", unsafe_allow_html=True)
