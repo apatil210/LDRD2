@@ -16,13 +16,12 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     url = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
-    # Row 0 contains grouped headers; row 1 contains the actual column names. [file:54]
     df = pd.read_excel(
         url,
         sheet_name="Process-level data",
         header=1,
     )
-    df.columns = df.columns.map(str).str.strip()
+    df.columns = [str(col).strip() for col in df.columns]
     return df
 
 df = load_data()
@@ -33,7 +32,11 @@ df = load_data()
 NAICS_COL = "NAICS Level 1"
 BAR_UNIT_COL = "Unit operation Level 2 classification"
 BAR_PCT_COL = "Percent Annual energy demand in 2022"
+
+# Prefer exact header name, but fall back to column AM by position if needed.
+# Excel column AM = 39th column = zero-based index 38.
 COVERAGE_COL = "Percent Coverage of NAICS 3-digit Sector"
+COVERAGE_COL_INDEX = 38
 
 # --------------------------
 # Validate required columns
@@ -42,12 +45,21 @@ if NAICS_COL not in df.columns:
     st.error(f"Column '{NAICS_COL}' not found. Columns are: {list(df.columns)}")
     st.stop()
 
+# Resolve coverage column
+if COVERAGE_COL in df.columns:
+    coverage_col_name = COVERAGE_COL
+elif len(df.columns) > COVERAGE_COL_INDEX:
+    coverage_col_name = df.columns[COVERAGE_COL_INDEX]
+else:
+    coverage_col_name = None
+
 # --------------------------
 # Build dropdown values
 # --------------------------
 naics_level1_list = (
     df[NAICS_COL]
     .dropna()
+    .astype(str)
     .drop_duplicates()
     .sort_values()
     .tolist()
@@ -100,7 +112,7 @@ st.markdown(
     .coverage-label {
         margin-top: 0.25rem;
         margin-bottom: 1rem;
-        font-size: 0.95rem;
+        font-size: 0.98rem;
         color: #2f2a4f;
         font-weight: 600;
     }
@@ -132,25 +144,19 @@ selected_naics1 = st.selectbox(
     index=0,
 )
 
-df_filtered = df[df[NAICS_COL] == selected_naics1].copy()
+df_filtered = df[df[NAICS_COL].astype(str) == str(selected_naics1)].copy()
 
 # --------------------------
 # Coverage label below dropdown
 # --------------------------
-if COVERAGE_COL in df_filtered.columns:
-    coverage_series = pd.to_numeric(df_filtered[COVERAGE_COL], errors="coerce").dropna()
+if coverage_col_name is not None:
+    coverage_series = pd.to_numeric(df_filtered[coverage_col_name], errors="coerce").fillna(0)
+    total_coverage = coverage_series.sum()
 
-    if not coverage_series.empty:
-        total_coverage = coverage_series.sum()
-        st.markdown(
-            f'<div class="coverage-label">Total coverage: {total_coverage:.1%}</div>',
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            '<div class="coverage-label">Total coverage: N/A</div>',
-            unsafe_allow_html=True,
-        )
+    st.markdown(
+        f'<div class="coverage-label">Total coverage: {total_coverage:.2%}</div>',
+        unsafe_allow_html=True,
+    )
 else:
     st.markdown(
         '<div class="coverage-label">Total coverage: N/A</div>',
