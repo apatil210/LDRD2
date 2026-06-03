@@ -183,6 +183,7 @@ with col2:
 with col3:
     st.markdown(
         '''
+        <a class="nav-link" href="https://testfile3py-doyype2f5f83qtzoss8lwp.streamlit.app/" target="_blanl">
         <div class="nav-card">
             <div>NAICS Sector<br>Coverage</div>
             <div class="nav-subtext">[Click Here]</div>
