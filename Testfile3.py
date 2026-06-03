@@ -92,7 +92,7 @@ st.markdown(
     <style>
     .stApp {
         font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        
+        background-color: #f8fafc;
     }
     .block-container {
         padding-top: 1.3rem;
