@@ -250,18 +250,18 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
             residence_time_col,
         ]
     ].rename(columns={
-        l3_col: "Sub-Sectors",
-        sec_elec_col: "SEC Electricity",
-        sec_fuels_col: "SEC Fuels",
-        sec_steam_col: "SEC Steam",
-        efficiency_col: "Efficiency",
-        process_temp_col: "Process temperature",
-        inlet_temp_col: "Inlet temperature",
-        outlet_temp_col: "Outlet temperature",
-        process_pressure_col: "Process pressure",
-        inlet_pressure_col: "Inlet pressure",
-        outlet_pressure_col: "Outlet pressure",
-        residence_time_col: "Residence time",
+        l3_col: "Category",
+        sec_elec_col: "SEC Electricity (GJ/t)",
+        sec_fuels_col: "SEC Fuels (GJ/t)",
+        sec_steam_col: "SEC Steam (GJ/t)",
+        efficiency_col: "Efficiency (%)",
+        process_temp_col: "Process temperature (°C)",
+        inlet_temp_col: "Inlet temperature (°C)",
+        outlet_temp_col: "Outlet temperature (°C)",
+        process_pressure_col: "Process pressure (bar)",
+        inlet_pressure_col: "Inlet pressure (bar)",
+        outlet_pressure_col: "Outlet pressure (bar)",
+        residence_time_col: "Residence time (sec)",
     })
 
     return {
