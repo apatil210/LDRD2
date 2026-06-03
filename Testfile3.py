@@ -21,7 +21,13 @@ def load_data():
         sheet_name="Process-level data",
         header=1,
     )
+
+    # Clean headers
     df.columns = [str(col).strip() for col in df.columns]
+
+    # Drop completely empty rows
+    df = df.dropna(how="all")
+
     return df
 
 df = load_data()
@@ -32,36 +38,33 @@ df = load_data()
 NAICS_COL = "NAICS Level 1"
 BAR_UNIT_COL = "Unit operation Level 2 classification"
 BAR_PCT_COL = "Percent Annual energy demand in 2022"
-
-# Prefer exact header name, but fall back to column AM by position if needed.
-# Excel column AM = 39th column = zero-based index 38.
 COVERAGE_COL = "Percent Coverage of NAICS 3-digit Sector"
-COVERAGE_COL_INDEX = 38
 
 # --------------------------
 # Validate required columns
 # --------------------------
 if NAICS_COL not in df.columns:
-    st.error(f"Column '{NAICS_COL}' not found. Columns are: {list(df.columns)}")
+    st.error(f"Column '{NAICS_COL}' not found.")
+    st.write("Available columns:", list(df.columns))
     st.stop()
 
-# Resolve coverage column
-if COVERAGE_COL in df.columns:
-    coverage_col_name = COVERAGE_COL
-elif len(df.columns) > COVERAGE_COL_INDEX:
-    coverage_col_name = df.columns[COVERAGE_COL_INDEX]
-else:
-    coverage_col_name = None
+# Resolve coverage column robustly
+coverage_candidates = [
+    col for col in df.columns
+    if "Percent Coverage of NAICS 3-digit Sector" in str(col)
+]
+
+coverage_col_name = coverage_candidates[0] if coverage_candidates else None
 
 # --------------------------
 # Build dropdown values
 # --------------------------
-naics_level1_list = (
+naics_level1_list = sorted(
     df[NAICS_COL]
     .dropna()
     .astype(str)
-    .drop_duplicates()
-    .sort_values()
+    .str.strip()
+    .unique()
     .tolist()
 )
 
@@ -97,6 +100,7 @@ st.markdown(
         border-radius: 18px;
         padding: 18px 22px 22px 22px;
         box-shadow: none;
+        margin-bottom: 1rem;
     }
 
     .block-container {
@@ -144,17 +148,17 @@ selected_naics1 = st.selectbox(
     index=0,
 )
 
-df_filtered = df[df[NAICS_COL].astype(str) == str(selected_naics1)].copy()
+df_filtered = df[df[NAICS_COL].astype(str).str.strip() == str(selected_naics1).strip()].copy()
 
 # --------------------------
 # Coverage label below dropdown
 # --------------------------
-if coverage_col_name is not None:
+if coverage_col_name is not None and coverage_col_name in df_filtered.columns:
     coverage_series = pd.to_numeric(df_filtered[coverage_col_name], errors="coerce").fillna(0)
     total_coverage = coverage_series.sum()
 
     st.markdown(
-        f'<div class="coverage-label">Total Sector Coverage of str(selected_naics1): {total_coverage:.2%}</div>',
+        f'<div class="coverage-label">Total Sector Coverage of {selected_naics1}: {total_coverage:.2%}</div>',
         unsafe_allow_html=True,
     )
 else:
