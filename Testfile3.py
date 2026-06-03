@@ -297,6 +297,6 @@ else:
 st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown('<div class="card">', unsafe_allow_html=True)
-st.subheader(f"Fact Sheet – {selected_naics}")
+# st.subheader(f"Fact Sheet – {selected_naics}")
 # st.dataframe(df_filtered, use_container_width=True, height=500)
 st.markdown("</div>", unsafe_allow_html=True)
