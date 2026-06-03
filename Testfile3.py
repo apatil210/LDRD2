@@ -240,7 +240,7 @@ with left_col:
 
 with right_col:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Annual Energy by NAICS Level 2")
+    st.subheader("Annual Energy Classification by NAICS (6-digit) code")
 
     if not bar_df.empty:
         bar_df = bar_df.sort_values("Annual Energy", ascending=True)
