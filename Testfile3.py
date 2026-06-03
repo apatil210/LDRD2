@@ -1,19 +1,18 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from pathlib import Path
 
-st.set_page_config(
-    page_title="US Manufacturing Energy Classification: Unit Operations",
-    layout="wide",
-)
+st.set_page_config(page_title="US Manufacturing Energy Classification: Unit Operations", layout="wide")
 
-URL = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
 SHEET_NAME = "Process-level data"
+GITHUB_URL = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
+LOCAL_FILE = "Modified-Data-for-NAICS.xlsx"
 
-COLS = {
+EXPECTED = {
     "naics_l1": "NAICS Level 1",
     "naics_l2": "NAICS Level 2",
-    "coverage": "Percent Coverage of NAICS 3-digit Sector",
+    "coverage": "Percent Coverage of NAICS (3-digit) Sector",
     "annual_energy": "Annual energy demand in 2022",
     "annual_electricity": "Annual electricity demand in 2022",
     "annual_fuels": "Annual fuels demand in 2022",
@@ -25,7 +24,8 @@ def norm(x):
 
 @st.cache_data
 def load_data():
-    df = pd.read_excel(URL, sheet_name=SHEET_NAME, header=1)
+    source = LOCAL_FILE if Path(LOCAL_FILE).exists() else GITHUB_URL
+    df = pd.read_excel(source, sheet_name=SHEET_NAME, header=1)
     df.columns = [str(c).strip() for c in df.columns]
 
     if len(df) > 0:
@@ -33,16 +33,40 @@ def load_data():
         if "GJ/FU" in first_row or "PJ" in first_row or "bara" in first_row:
             df = df.iloc[1:].copy()
 
-    df = df.dropna(axis=1, how="all")
+    df = df.dropna(axis=1, how="all").reset_index(drop=True)
     return df
 
 def resolve_columns(df):
     norm_map = {norm(c): c for c in df.columns}
-    resolved = {}
-    missing = []
+    resolved, missing = {}, []
 
-    for k, expected in COLS.items():
+    for k, expected in EXPECTED.items():
         found = norm_map.get(norm(expected))
+        if found is None:
+            for c in df.columns:
+                cn = norm(c)
+                if k == "coverage" and "percent coverage of naics" in cn and "sector" in cn:
+                    found = c
+                    break
+                if k == "naics_l2" and cn.startswith("naics level 2"):
+                    found = c
+                    break
+                if k == "naics_l1" and cn.startswith("naics level 1"):
+                    found = c
+                    break
+                if k == "annual_energy" and cn.startswith("annual energy demand in 2022"):
+                    found = c
+                    break
+                if k == "annual_electricity" and cn.startswith("annual electricity demand in 2022"):
+                    found = c
+                    break
+                if k == "annual_fuels" and cn.startswith("annual fuels demand in 2022"):
+                    found = c
+                    break
+                if k == "annual_steam" and "annual fuels or electricity for steam" in cn and "demand in 2022" in cn:
+                    found = c
+                    break
+
         if found is None:
             missing.append(expected)
         else:
@@ -50,27 +74,14 @@ def resolve_columns(df):
 
     return resolved, missing
 
-def num(s):
-    return pd.to_numeric(s, errors="coerce").fillna(0)
+def num(series):
+    return pd.to_numeric(series, errors="coerce").fillna(0)
 
 def fmt_pj(x):
     return f"{x:,.2f} PJ"
 
 df = load_data()
 cols, missing = resolve_columns(df)
-
-if missing:
-    st.error("Missing required columns: " + ", ".join(missing))
-    st.write("Available columns:", list(df.columns))
-    st.stop()
-
-naics_l1_col = cols["naics_l1"]
-naics_l2_col = cols["naics_l2"]
-coverage_col = cols["coverage"]
-annual_energy_col = cols["annual_energy"]
-annual_electricity_col = cols["annual_electricity"]
-annual_fuels_col = cols["annual_fuels"]
-annual_steam_col = cols["annual_steam"]
 
 st.markdown(
     """
@@ -80,7 +91,7 @@ st.markdown(
         background-color: #f8fafc;
     }
     .block-container {
-        padding-top: 1.4rem;
+        padding-top: 1.3rem;
         padding-bottom: 2rem;
         max-width: 1250px;
     }
@@ -120,32 +131,33 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    "<h1>US Manufacturing Energy Classification: Unit Operations</h1>",
-    unsafe_allow_html=True,
-)
+st.markdown("<h1>US Manufacturing Energy Classification: Unit Operations</h1>", unsafe_allow_html=True)
 st.write("Select a NAICS Level 1 sector to generate an energy fact sheet.")
 
-naics_options = (
-    df[naics_l1_col]
-    .dropna()
-    .astype(str)
-    .drop_duplicates()
-    .sort_values()
-    .tolist()
-)
+if missing:
+    st.error("Missing required columns: " + ", ".join(missing))
+    st.write("Available columns:", list(df.columns))
+    st.stop()
 
+naics_l1_col = cols["naics_l1"]
+naics_l2_col = cols["naics_l2"]
+coverage_col = cols["coverage"]
+annual_energy_col = cols["annual_energy"]
+annual_electricity_col = cols["annual_electricity"]
+annual_fuels_col = cols["annual_fuels"]
+annual_steam_col = cols["annual_steam"]
+
+naics_options = sorted(df[naics_l1_col].dropna().astype(str).drop_duplicates().tolist())
 selected_naics = st.selectbox("NAICS Level 1", naics_options, index=0)
 
 df_filtered = df[df[naics_l1_col].astype(str) == str(selected_naics)].copy()
 
 coverage_values = pd.to_numeric(df_filtered[coverage_col], errors="coerce").dropna()
 coverage = coverage_values.max() if not coverage_values.empty else None
+coverage_text = f"{coverage:.2%}" if coverage is not None else "N/A"
 
 st.markdown(
-    f'<div class="coverage-label">Total Sector Coverage of {selected_naics}: {coverage:.2%}</div>'
-    if coverage is not None
-    else f'<div class="coverage-label">Total Sector Coverage of {selected_naics}: N/A</div>',
+    f'<div class="coverage-label">Total Sector Coverage of {selected_naics}: {coverage_text}</div>',
     unsafe_allow_html=True,
 )
 
@@ -209,7 +221,6 @@ with left_col:
         st.plotly_chart(fig_donut, use_container_width=True)
     else:
         st.info("No annual energy breakdown is available for this selection.")
-
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right_col:
@@ -239,7 +250,6 @@ with right_col:
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
         st.info("No NAICS Level 2 annual energy data is available for this selection.")
-
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown('<div class="card">', unsafe_allow_html=True)
