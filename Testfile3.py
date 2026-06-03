@@ -1,97 +1,70 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import requests
+from io import BytesIO
 
 st.set_page_config(page_title="Column B vs Column AM Bar Chart", layout="wide")
 
-st.title("Bar Chart: Column B vs Column AM")
+st.title("Bar Chart for Column B vs Column AM")
 
-# Use the RAW GitHub file URL, not the github.com/blob URL
-EXCEL_URL = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20Data%20for%20NAICS.xlsx"
-
+github_url = "https://raw.githubusercontent.com/apatil210/LDRD2/main/Modified%20Data%20for%20NAICS.xlsx"
 
 @st.cache_data
-def get_excel_file(url):
-    return pd.ExcelFile(url)
+def download_excel_bytes(url):
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.content
 
+excel_bytes = download_excel_bytes(github_url)
 
 @st.cache_data
-def load_sheet(url, sheet_name):
-    return pd.read_excel(url, sheet_name=sheet_name)
+def get_sheet_names(file_bytes):
+    xls = pd.ExcelFile(BytesIO(file_bytes))
+    return xls.sheet_names
 
-
-try:
-    xls = get_excel_file(EXCEL_URL)
-    sheet_names = xls.sheet_names
-except Exception as e:
-    st.error(f"Could not load the Excel file from GitHub: {e}")
-    st.stop()
-
+sheet_names = get_sheet_names(excel_bytes)
 sheet_name = st.selectbox("Select sheet", sheet_names)
 
-try:
-    df = load_sheet(EXCEL_URL, sheet_name)
-except Exception as e:
-    st.error(f"Could not read the selected sheet: {e}")
-    st.stop()
+@st.cache_data
+def load_sheet(file_bytes, sheet):
+    return pd.read_excel(BytesIO(file_bytes), sheet_name=sheet)
 
-st.subheader("Sheet Preview")
+df = load_sheet(excel_bytes, sheet_name)
+
+st.write("Preview of selected sheet:")
 st.dataframe(df.head())
 
-# Excel column positions:
-# B  = index 1
-# AM = index 38
-col_b_index = 1
-col_am_index = 38
+col_b_index = 1   # Column B
+col_am_index = 38 # Column AM
 
 if df.shape[1] <= col_am_index:
-    st.error(
-        f"The selected sheet '{sheet_name}' does not have enough columns for Column AM. "
-        f"It has only {df.shape[1]} columns."
+    st.error("This sheet does not have enough columns to access Column AM.")
+else:
+    x = df.iloc[:, col_b_index]
+    y = df.iloc[:, col_am_index]
+
+    plot_df = pd.DataFrame({
+        "Column_B": x,
+        "Column_AM": pd.to_numeric(y, errors="coerce")
+    }).dropna()
+
+    st.write("Data used for plotting:")
+    st.dataframe(plot_df.head(20))
+
+    fig = px.bar(
+        plot_df,
+        x="Column_B",
+        y="Column_AM",
+        title=f"Bar Chart: Column B vs Column AM ({sheet_name})",
+        labels={"Column_B": "Column B", "Column_AM": "Column AM"}
     )
-    st.stop()
 
-x_series = df.iloc[:, col_b_index]
-y_series = df.iloc[:, col_am_index]
+    fig.update_layout(
+        xaxis_title="Column B",
+        yaxis_title="Column AM",
+        xaxis_tickangle=-45,
+        height=600
+    )
 
-x_name = df.columns[col_b_index]
-y_name = df.columns[col_am_index]
-
-plot_df = pd.DataFrame({
-    "Column_B": x_series,
-    "Column_AM": pd.to_numeric(y_series, errors="coerce")
-})
-
-plot_df = plot_df.dropna(subset=["Column_B", "Column_AM"])
-
-# Optional filter for cleaner chart
-remove_blank = st.checkbox("Remove blank labels", value=True)
-if remove_blank:
-    plot_df = plot_df[plot_df["Column_B"].astype(str).str.strip() != ""]
-
-sort_values = st.checkbox("Sort by Column AM", value=False)
-if sort_values:
-    plot_df = plot_df.sort_values("Column_AM", ascending=False)
-
-st.subheader("Data Used for Chart")
-st.dataframe(plot_df)
-
-fig = px.bar(
-    plot_df,
-    x="Column_B",
-    y="Column_AM",
-    title=f"Bar Chart for {sheet_name}: Column B vs Column AM",
-    labels={
-        "Column_B": f"Column B ({x_name})",
-        "Column_AM": f"Column AM ({y_name})"
-    }
-)
-
-fig.update_layout(
-    xaxis_title=f"Column B ({x_name})",
-    yaxis_title=f"Column AM ({y_name})",
-    xaxis_tickangle=-45,
-    height=650
-)
-
-st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
