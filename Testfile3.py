@@ -154,7 +154,7 @@ if coverage_col_name is not None:
     total_coverage = coverage_series.sum()
 
     st.markdown(
-        f'<div class="coverage-label">Total coverage: {total_coverage:.2%}</div>',
+        f'<div class="coverage-label">Total Sector Coverage of str(selected_naics1): {total_coverage:.2%}</div>',
         unsafe_allow_html=True,
     )
 else:
