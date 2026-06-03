@@ -10,11 +10,11 @@ st.set_page_config(
     layout="wide",
 )
 
-# Custom CSS to mimic the screenshot theme
+# Custom CSS (no shadows, rectangular selectbox)
 st.markdown(
     """
     <style>
-    /* Global background */
+    /* Global font */
     .stApp {
         font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -38,7 +38,7 @@ st.markdown(
         font-weight: 500 !important;
     }
 
-    /* "Card" look for containers (no shadow) */
+    /* Card containers – no shadow */
     .card {
         background-color: #ffffff;
         border-radius: 18px;
@@ -46,16 +46,16 @@ st.markdown(
         box-shadow: none;
     }
 
-    /* Remove default block gap a bit */
+    /* Page padding */
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 2rem;
         max-width: 1200px;
     }
 
-    /* Resize selectbox padding */
+    /* Make selectbox rectangular (no pill) */
     .stSelectbox > div > div {
-        border-radius: 999px;
+        border-radius: 6px;
     }
 
     /* Table tweaks */
