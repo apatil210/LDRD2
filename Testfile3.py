@@ -224,6 +224,10 @@ with left_col:
             names="Type",
             values="Value",
             hole=0.55,
+            domain=dict(
+        x=[0.05, 0.95], # horizontal span (0–1). Smaller span = smaller donut
+        y=[0.10, 0.90], # vertical span (0–1)
+    ),
             color="Type",
             color_discrete_map={
                 "Annual Fuels": "#f7901d",
