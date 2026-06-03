@@ -16,7 +16,7 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     url = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
-    # Row 0 is grouping headers; row 1 has actual field names (NAICS Level 1, etc.). [file:54]
+    # Row 0 contains grouped headers; row 1 contains the actual column names. [file:54]
     df = pd.read_excel(
         url,
         sheet_name="Process-level data",
@@ -27,17 +27,23 @@ def load_data():
 
 df = load_data()
 
+# --------------------------
+# Column names
+# --------------------------
 NAICS_COL = "NAICS Level 1"
 BAR_UNIT_COL = "Unit operation Level 2 classification"
 BAR_PCT_COL = "Percent Annual energy demand in 2022"
 COVERAGE_COL = "Percent Coverage of NAICS 3-digit Sector"
 
+# --------------------------
+# Validate required columns
+# --------------------------
 if NAICS_COL not in df.columns:
     st.error(f"Column '{NAICS_COL}' not found. Columns are: {list(df.columns)}")
     st.stop()
 
 # --------------------------
-# Build NAICS Level 1 dropdown list
+# Build dropdown values
 # --------------------------
 naics_level1_list = (
     df[NAICS_COL]
@@ -71,7 +77,7 @@ st.markdown(
 
     label[data-baseweb="typography"] {
         color: #5b5873 !important;
-        font-weight: 500 !important;
+        font-weight: 500;
     }
 
     .card {
@@ -91,16 +97,12 @@ st.markdown(
         border-radius: 4px;
     }
 
-    .coverage-tag {
-        display: inline-block;
-        margin-top: 0.4rem;
-        margin-bottom: 0.8rem;
-        padding: 0.15rem 0.45rem;
-        border-radius: 999px;
-        background-color: #eef3ff;
+    .coverage-label {
+        margin-top: 0.25rem;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
         color: #2f2a4f;
-        font-size: 0.8rem;
-        font-weight: 500;
+        font-weight: 600;
     }
 
     .dataframe tbody tr th {
@@ -112,7 +114,7 @@ st.markdown(
 )
 
 # --------------------------
-# Title + NAICS filter
+# Title
 # --------------------------
 st.markdown(
     "<h1>US Manufacturing Energy Classification: Unit Operations</h1>",
@@ -121,40 +123,50 @@ st.markdown(
 
 st.write("Select a NAICS Level 1 sector to generate a fact sheet.")
 
+# --------------------------
+# Dropdown
+# --------------------------
 selected_naics1 = st.selectbox(
     "NAICS Level 1",
     naics_level1_list,
     index=0,
 )
 
-df_filtered = df[df[NAICS_COL] == selected_naics1]
+df_filtered = df[df[NAICS_COL] == selected_naics1].copy()
 
 # --------------------------
-# Compute NAICS coverage tag
+# Coverage label below dropdown
 # --------------------------
-coverage_text = None
 if COVERAGE_COL in df_filtered.columns:
-    # Use sum here; switch to max() if each NAICS appears once and you prefer that.
-    coverage_value = df_filtered[COVERAGE_COL].dropna().sum()
-    if pd.notna(coverage_value) and coverage_value != 0:
-        coverage_text = f"Total coverage: {coverage_value:.1f}% of NAICS 3‑digit sector"
-else:
-    coverage_text = None
+    coverage_series = pd.to_numeric(df_filtered[COVERAGE_COL], errors="coerce").dropna()
 
-if coverage_text:
+    if not coverage_series.empty:
+        total_coverage = coverage_series.sum()
+        st.markdown(
+            f'<div class="coverage-label">Total coverage: {total_coverage:.1%}</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            '<div class="coverage-label">Total coverage: N/A</div>',
+            unsafe_allow_html=True,
+        )
+else:
     st.markdown(
-        f'<span class="coverage-tag">{coverage_text}</span>',
+        '<div class="coverage-label">Total coverage: N/A</div>',
         unsafe_allow_html=True,
     )
 
 # --------------------------
-# Bar data from filtered rows
+# Prepare bar chart data
 # --------------------------
 if BAR_UNIT_COL in df_filtered.columns and BAR_PCT_COL in df_filtered.columns:
+    temp_bar = df_filtered[[BAR_UNIT_COL, BAR_PCT_COL]].copy()
+    temp_bar[BAR_PCT_COL] = pd.to_numeric(temp_bar[BAR_PCT_COL], errors="coerce")
+
     bar_df = (
-        df_filtered[[BAR_UNIT_COL, BAR_PCT_COL]]
-        .dropna()
-        .groupby(BAR_UNIT_COL, as_index=False)
+        temp_bar.dropna(subset=[BAR_UNIT_COL, BAR_PCT_COL])
+        .groupby(BAR_UNIT_COL, as_index=False)[BAR_PCT_COL]
         .sum()
         .rename(
             columns={
@@ -166,7 +178,9 @@ if BAR_UNIT_COL in df_filtered.columns and BAR_PCT_COL in df_filtered.columns:
 else:
     bar_df = pd.DataFrame(columns=["Unit Operation", "Percent Energy"])
 
-# Simple placeholder donut data
+# --------------------------
+# Placeholder donut chart data
+# --------------------------
 breakdown_df = pd.DataFrame(
     {
         "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
@@ -175,7 +189,7 @@ breakdown_df = pd.DataFrame(
 )
 
 # --------------------------
-# Layout: donut + bar
+# Layout
 # --------------------------
 left_col, right_col = st.columns([1.05, 1.15])
 
@@ -198,8 +212,8 @@ with left_col:
         showlegend=False,
         margin=dict(t=20, b=10, l=10, r=10),
     )
-    st.plotly_chart(fig_donut, use_container_width=True)
 
+    st.plotly_chart(fig_donut, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right_col:
@@ -217,7 +231,7 @@ with right_col:
         )
         fig_bar.update_traces(
             marker_color="#006b6b",
-            text=bar_df_sorted["Percent Energy"] / 100.0,
+            text=bar_df_sorted["Percent Energy"],
             texttemplate="%{text:.1%}",
             textposition="outside",
         )
@@ -227,6 +241,7 @@ with right_col:
             xaxis_tickformat=".0%",
             margin=dict(t=20, b=20, l=80, r=60),
         )
+
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
         st.write("No energy data available for this NAICS Level 1 selection.")
@@ -234,7 +249,7 @@ with right_col:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --------------------------
-# Bottom table – fact sheet
+# Fact sheet table
 # --------------------------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Fact Sheet – {selected_naics1}")
