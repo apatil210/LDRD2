@@ -45,6 +45,10 @@ COL_ANNUAL_ELECTRICITY = "Annual electricity demand in 2022"
 COL_ANNUAL_FUELS = "Annual fuels demand in 2022"
 COL_ANNUAL_STEAM = "Annual fuels or electricity for steam or steam from CHP demand in 2022"
 
+COL_SEC_ELECTRICITY = "SEC electricity"
+COL_SEC_FUELS = "SEC fuels"
+COL_SEC_STEAM = "SEC fuels or electricity for steam or steam from CHP"
+
 COL_EFFICIENCY = "Efficiency"
 COL_PROCESS_TEMP = "Process temperature"
 COL_INLET_TEMP = "Inlet temperature"
@@ -193,6 +197,10 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     annual_fuels_col = find_matching_column(df, COL_ANNUAL_FUELS)
     annual_steam_col = find_matching_column(df, COL_ANNUAL_STEAM)
 
+    sec_elec_col = find_matching_column(df, COL_SEC_ELECTRICITY)
+    sec_fuels_col = find_matching_column(df, COL_SEC_FUELS)
+    sec_steam_col = find_matching_column(df, COL_SEC_STEAM)
+
     efficiency_col = find_matching_column(df, COL_EFFICIENCY)
     process_temp_col = find_matching_column(df, COL_PROCESS_TEMP)
     inlet_temp_col = find_matching_column(df, COL_INLET_TEMP)
@@ -217,6 +225,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
         annual_elec_col,
         annual_fuels_col,
         annual_steam_col,
+        sec_elec_col,
+        sec_fuels_col,
+        sec_steam_col,
     ]
 
     for col in numeric_cols:
@@ -239,9 +250,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     detail_df = selected_df[
         [
             l3_col,
-            annual_elec_col,
-            annual_fuels_col,
-            annual_steam_col,
+            sec_elec_col,
+            sec_fuels_col,
+            sec_steam_col,
             efficiency_col,
             process_temp_col,
             inlet_temp_col,
@@ -253,9 +264,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
         ]
     ].rename(columns={
         l3_col: "Industry",
-        annual_elec_col: "Annual Electricity (PJ/yr)",
-        annual_fuels_col: "Annual Fuels (PJ/yr)",
-        annual_steam_col: "Annual Steam (PJ/yr)",
+        sec_elec_col: "SEC Electricity (GJ/t)",
+        sec_fuels_col: "SEC Fuels (GJ/t)",
+        sec_steam_col: "SEC Steam (GJ/t)",
         efficiency_col: "Efficiency (%)",
         process_temp_col: "Process temperature (°C)",
         inlet_temp_col: "Inlet temperature (°C)",
