@@ -252,7 +252,7 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
             residence_time_col,
         ]
     ].rename(columns={
-        l3_col: "Category",
+        l3_col: "Industry",
         annual_elec_col: "Annual Electricity (PJ/yr)",
         annual_fuels_col: "Annual Fuels (PJ/yr)",
         annual_steam_col: "Annual Steam (PJ/yr)",
