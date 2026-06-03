@@ -376,7 +376,7 @@ def build_annual_energy_donut(fact_sheet: dict):
         ),
         annotations=[
             dict(
-                text=f"<b>Total Annual Energy (PJ/yr)</b><br>{total_energy:.2f}",
+                text=f"<b>Total (PJ/yr)</b><br>{total_energy:.2f}",
                 x=0.5,
                 y=0.5,
                 showarrow=False,
@@ -418,7 +418,7 @@ try:
                 f"{fact_sheet['Annual Energy']:.2f}"
             )
 
-            st.subheader("Annual Energy Breakdown")
+            st.subheader("Total Annual Energy Breakdown")
             donut_fig = build_annual_energy_donut(fact_sheet)
 
             if donut_fig is not None:
