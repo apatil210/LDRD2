@@ -16,7 +16,6 @@ st.markdown(
     <style>
     /* Global background */
     .stApp {
-        background-color: #f7f5fb;
         font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
