@@ -2,11 +2,17 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# --------------------------
+# Page config
+# --------------------------
 st.set_page_config(
     page_title="US Manufacturing Energy Classification: Unit Operations",
     layout="wide",
 )
 
+# --------------------------
+# Load Excel data from GitHub
+# --------------------------
 @st.cache_data
 def load_data():
     url = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
@@ -20,16 +26,28 @@ def load_data():
 
 df = load_data()
 
+# --------------------------
+# Column names
+# --------------------------
 NAICS_COL = "NAICS Level 1"
 BAR_UNIT_COL = "Unit operation Level 2 classification"
 BAR_PCT_COL = "Percent Annual energy demand in 2022"
-COVERAGE_COL = "Percent Coverage of NAICS 3-digit Sector"
-COVERAGE_COL_INDEX = 38
 
+COVERAGE_COL = "Percent Coverage of NAICS 3-digit Sector"
+COVERAGE_COL_INDEX = 38  # fallback if needed
+
+ELEC_COL = "Annual electricity demand in 2022"
+FUELS_COL = "Annual fuels demand in 2022"
+STEAM_COL = "Annual fuels or electricity for steam or steam from CHP demand in 2022"
+
+# --------------------------
+# Validate required columns
+# --------------------------
 if NAICS_COL not in df.columns:
     st.error(f"Column '{NAICS_COL}' not found. Columns are: {list(df.columns)}")
     st.stop()
 
+# Resolve coverage column
 if COVERAGE_COL in df.columns:
     coverage_col_name = COVERAGE_COL
 elif len(df.columns) > COVERAGE_COL_INDEX:
@@ -37,6 +55,9 @@ elif len(df.columns) > COVERAGE_COL_INDEX:
 else:
     coverage_col_name = None
 
+# --------------------------
+# Build dropdown values
+# --------------------------
 naics_level1_list = (
     df[NAICS_COL]
     .dropna()
@@ -46,6 +67,9 @@ naics_level1_list = (
     .tolist()
 )
 
+# --------------------------
+# Custom CSS
+# --------------------------
 st.markdown(
     """
     <style>
@@ -103,6 +127,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# --------------------------
+# Title
+# --------------------------
 st.markdown(
     "<h1>US Manufacturing Energy Classification: Unit Operations</h1>",
     unsafe_allow_html=True,
@@ -110,6 +137,9 @@ st.markdown(
 
 st.write("Select a NAICS Level 1 sector to generate a fact sheet.")
 
+# --------------------------
+# Dropdown
+# --------------------------
 selected_naics1 = st.selectbox(
     "NAICS Level 1",
     naics_level1_list,
@@ -118,12 +148,15 @@ selected_naics1 = st.selectbox(
 
 df_filtered = df[df[NAICS_COL].astype(str) == str(selected_naics1)].copy()
 
+# --------------------------
+# Coverage label below dropdown
+# --------------------------
 if coverage_col_name is not None:
     coverage_series = pd.to_numeric(df_filtered[coverage_col_name], errors="coerce").fillna(0)
     total_coverage = coverage_series.sum()
 
     st.markdown(
-        f'<div class="coverage-label">Sector Coverage of {selected_naics1}: {total_coverage:.2%}</div>',
+        f'<div class="coverage-label">Total Sector Coverage of {selected_naics1}: {total_coverage:.2%}</div>',
         unsafe_allow_html=True,
     )
 else:
@@ -132,6 +165,9 @@ else:
         unsafe_allow_html=True,
     )
 
+# --------------------------
+# Prepare bar chart data
+# --------------------------
 if BAR_UNIT_COL in df_filtered.columns and BAR_PCT_COL in df_filtered.columns:
     temp_bar = df_filtered[[BAR_UNIT_COL, BAR_PCT_COL]].copy()
     temp_bar[BAR_PCT_COL] = pd.to_numeric(temp_bar[BAR_PCT_COL], errors="coerce")
@@ -150,36 +186,59 @@ if BAR_UNIT_COL in df_filtered.columns and BAR_PCT_COL in df_filtered.columns:
 else:
     bar_df = pd.DataFrame(columns=["Unit Operation", "Percent Energy"])
 
+# --------------------------
+# Prepare donut chart data
+# --------------------------
+for col in [ELEC_COL, FUELS_COL, STEAM_COL]:
+    if col in df_filtered.columns:
+        df_filtered[col] = pd.to_numeric(df_filtered[col], errors="coerce").fillna(0)
+    else:
+        df_filtered[col] = 0
+
+electricity_total = df_filtered[ELEC_COL].sum()
+fuels_total = df_filtered[FUELS_COL].sum()
+steam_total = df_filtered[STEAM_COL].sum()
+
 breakdown_df = pd.DataFrame(
     {
         "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
-        "Value": [0.826, 0.169, 0.0051],
+        "Value": [fuels_total, steam_total, electricity_total],
     }
 )
 
+# Optional: remove zero or negative totals so the donut renders cleanly
+breakdown_df = breakdown_df[breakdown_df["Value"] > 0]
+
+# --------------------------
+# Layout
+# --------------------------
 left_col, right_col = st.columns([1.05, 1.15])
 
 with left_col:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Total Annual Energy Breakdown")
 
-    fig_donut = px.pie(
-        breakdown_df,
-        names="Type",
-        values="Value",
-        hole=0.65,
-    )
-    fig_donut.update_traces(
-        textinfo="percent",
-        textposition="outside",
-        marker=dict(colors=["#f7901d", "#3b4f9b", "#a3d5a4"]),
-    )
-    fig_donut.update_layout(
-        showlegend=False,
-        margin=dict(t=20, b=10, l=10, r=10),
-    )
+    if not breakdown_df.empty:
+        fig_donut = px.pie(
+            breakdown_df,
+            names="Type",
+            values="Value",
+            hole=0.65,
+        )
+        fig_donut.update_traces(
+            textinfo="percent",
+            textposition="outside",
+            marker=dict(colors=["#f7901d", "#3b4f9b", "#a3d5a4"]),
+        )
+        fig_donut.update_layout(
+            showlegend=False,
+            margin=dict(t=20, b=10, l=10, r=10),
+        )
 
-    st.plotly_chart(fig_donut, use_container_width=True)
+        st.plotly_chart(fig_donut, use_container_width=True)
+    else:
+        st.write("No annual energy breakdown data available for this NAICS Level 1 selection.")
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right_col:
@@ -214,6 +273,9 @@ with right_col:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+# --------------------------
+# Fact sheet table
+# --------------------------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Fact Sheet – {selected_naics1}")
 st.dataframe(df_filtered, use_container_width=True)
