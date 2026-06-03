@@ -2,26 +2,26 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# --------------------------
+# Page config and THEME
+# --------------------------
 st.set_page_config(
     page_title="US Manufacturing Energy Classification: Unit Operations",
     layout="wide",
 )
 
 # --------------------------
-# Load Excel data
+# Load Excel data from GitHub
 # --------------------------
 @st.cache_data
 def load_data():
-    # Adjust sheet name if different
-    df = pd.read_excel(
-        "Modified-Data-for-NAICS.xlsx",
-        sheet_name="Process-level data"
-    )
+    url = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
+    df = pd.read_excel(url, sheet_name="Process-level data")
     return df
 
 df = load_data()
 
-# Get NAICS Level 1 list (Column B in that sheet)
+# Build NAICS Level 1 dropdown list (Column B)
 naics_level1_list = (
     df["NAICS Level 1"]
     .dropna()
@@ -31,50 +31,57 @@ naics_level1_list = (
 )
 
 # --------------------------
-# Custom CSS (cards rectangular, etc.)
+# Custom CSS (no shadows, rectangular selectbox)
 # --------------------------
 st.markdown(
     """
     <style>
+    /* Global font */
     .stApp {
         font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
                      "Segoe UI", sans-serif;
     }
 
+    /* Main title */
     h1 {
         font-weight: 700 !important;
         color: #2f2a4f !important;
         letter-spacing: 0.02em;
     }
 
+    /* Subheaders */
     h2, h3 {
         color: #2f2a4f !important;
         font-weight: 600 !important;
     }
 
+    /* Dropdown label */
     label[data-baseweb="typography"] {
         color: #5b5873 !important;
         font-weight: 500 !important;
     }
 
+    /* Card containers – no shadow */
     .card {
         background-color: #ffffff;
-        border-radius: 12px;
+        border-radius: 18px;
         padding: 18px 22px 22px 22px;
         box-shadow: none;
     }
 
+    /* Page padding */
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 2rem;
         max-width: 1200px;
     }
 
-    /* Rectangular selectbox */
+    /* Make selectbox rectangular */
     .stSelectbox > div > div {
         border-radius: 4px;
     }
 
+    /* Table tweaks */
     .dataframe tbody tr th {
         display: none;
     }
@@ -99,15 +106,13 @@ selected_naics1 = st.selectbox(
     index=0,
 )
 
-# Filter the big dataframe by selected NAICS Level 1
+# Filter the dataframe by selected NAICS Level 1
 df_filtered = df[df["NAICS Level 1"] == selected_naics1]
 
 # --------------------------
-# Example: build bar data from filtered rows
-# (you can replace this with whatever aggregation you want)
+# Build bar data from filtered rows
+# using Unit operation Level 2 + Percent Annual energy demand in 2022
 # --------------------------
-# For illustration, use "Unit operation Level 2 classification"
-# and "Percent Annual energy demand in 2022" if available.
 if (
     "Unit operation Level 2 classification" in df_filtered.columns
     and "Percent Annual energy demand in 2022" in df_filtered.columns
@@ -132,7 +137,7 @@ if (
 else:
     bar_df = pd.DataFrame(columns=["Unit Operation", "Percent Energy"])
 
-# Example donut data (placeholder; replace with real fields if desired)
+# Example donut data (placeholder – adjust fields if you have real ones)
 breakdown_df = pd.DataFrame(
     {
         "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
@@ -141,7 +146,7 @@ breakdown_df = pd.DataFrame(
 )
 
 # --------------------------
-# Layout: donut + bar
+# Top row: donut + bar chart
 # --------------------------
 left_col, right_col = st.columns([1.05, 1.15])
 
@@ -164,7 +169,9 @@ with left_col:
         showlegend=False,
         margin=dict(t=20, b=10, l=10, r=10),
     )
+
     st.plotly_chart(fig_donut, use_container_width=True)
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right_col:
@@ -173,6 +180,7 @@ with right_col:
 
     if not bar_df.empty:
         bar_df_sorted = bar_df.sort_values("Percent Energy", ascending=True)
+
         fig_bar = px.bar(
             bar_df_sorted,
             x="Percent Energy",
@@ -191,16 +199,21 @@ with right_col:
             xaxis_tickformat=".0%",
             margin=dict(t=20, b=20, l=80, r=60),
         )
+
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
         st.write("No energy data available for this NAICS Level 1 selection.")
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --------------------------
-# Bottom table – fact sheet for selected NAICS Level 1
+# Bottom table – fact sheet
 # --------------------------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Fact Sheet – {selected_naics1}")
 
-st.dataframe(df_filtered, use_container_width=True)
+st.dataframe(
+    df_filtered,
+    use_container_width=True,
+)
 st.markdown("</div>", unsafe_allow_html=True)
