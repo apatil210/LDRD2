@@ -173,6 +173,7 @@ with col2:
         '''
         <div class="nav-card">
             <div>Unit Operation<br>Data</div>
+            <div class="nav-subtext">[Click Here]</div>
         </div>
         ''',
         unsafe_allow_html=True,
@@ -183,6 +184,7 @@ with col3:
         '''
         <div class="nav-card">
             <div>NAICS Sector<br>Coverage</div>
+            <div class="nav-subtext">[Click Here]</div>
         </div>
         ''',
         unsafe_allow_html=True,
