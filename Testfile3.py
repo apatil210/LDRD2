@@ -24,17 +24,18 @@ def load_data():
     df.columns = [str(col).strip() for col in df.columns]
     return df
 
+
 df = load_data()
 
 # --------------------------
-# Column names from workbook
+# Column names
 # --------------------------
 NAICS_COL = "NAICS Level 1"
 BAR_UNIT_COL = "Unit operation Level 2 classification"
 BAR_PCT_COL = "Percent Annual energy demand in 2022"
 
 COVERAGE_COL = "Percent Coverage of NAICS 3-digit Sector"
-COVERAGE_COL_INDEX = 38  # fallback position if header text varies
+COVERAGE_COL_INDEX = 38  # fallback if exact name is missing
 
 ELEC_COL = "Annual electricity demand in 2022"
 FUEL_COL = "Annual fuels demand in 2022"
@@ -44,20 +45,21 @@ STEAM_COL = "Annual fuels or electricity for steam or steam from CHP demand in 2
 # Validate required columns
 # --------------------------
 required_cols = [NAICS_COL, BAR_UNIT_COL, BAR_PCT_COL]
-missing_cols = [col for col in required_cols if col not in df.columns]
+missing_required = [col for col in required_cols if col not in df.columns]
 
-if missing_cols:
-    st.error(f"Missing required columns: {missing_cols}")
-    st.write("Available columns:")
-    st.write(list(df.columns))
+if missing_required:
+    st.error(
+        f"Missing required columns: {missing_required}. Available columns are: {list(df.columns)}"
+    )
     st.stop()
 
-# Resolve coverage column robustly
-coverage_col_name = None
+# Resolve coverage column
 if COVERAGE_COL in df.columns:
     coverage_col_name = COVERAGE_COL
 elif len(df.columns) > COVERAGE_COL_INDEX:
     coverage_col_name = df.columns[COVERAGE_COL_INDEX]
+else:
+    coverage_col_name = None
 
 # --------------------------
 # Build dropdown values
@@ -66,14 +68,11 @@ naics_level1_list = (
     df[NAICS_COL]
     .dropna()
     .astype(str)
+    .str.strip()
     .drop_duplicates()
     .sort_values()
     .tolist()
 )
-
-if not naics_level1_list:
-    st.error("No NAICS Level 1 values found in the dataset.")
-    st.stop()
 
 # --------------------------
 # Custom CSS
@@ -106,8 +105,9 @@ st.markdown(
         background-color: #ffffff;
         border-radius: 18px;
         padding: 18px 22px 22px 22px;
-        box-shadow: none;
-        border: 1px solid #ebe7f2;
+        box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+        border: 1px solid rgba(47, 42, 79, 0.08);
+        margin-bottom: 1rem;
     }
 
     .block-container {
@@ -117,7 +117,7 @@ st.markdown(
     }
 
     .stSelectbox > div > div {
-        border-radius: 4px;
+        border-radius: 6px;
     }
 
     .coverage-label {
@@ -126,6 +126,33 @@ st.markdown(
         font-size: 0.98rem;
         color: #2f2a4f;
         font-weight: 600;
+    }
+
+    .metric-row {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .metric-box {
+        background: #f7f7fb;
+        border: 1px solid rgba(47, 42, 79, 0.08);
+        border-radius: 14px;
+        padding: 12px 16px;
+        min-width: 180px;
+    }
+
+    .metric-label {
+        font-size: 0.86rem;
+        color: #5b5873;
+        margin-bottom: 4px;
+    }
+
+    .metric-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #2f2a4f;
     }
 
     .dataframe tbody tr th {
@@ -155,30 +182,86 @@ selected_naics1 = st.selectbox(
     index=0,
 )
 
-df_filtered = df[df[NAICS_COL].astype(str) == str(selected_naics1)].copy()
+df_filtered = df[df[NAICS_COL].astype(str).str.strip() == str(selected_naics1).strip()].copy()
 
 # --------------------------
-# Coverage label below dropdown
+# Numeric cleanup
+# --------------------------
+numeric_cols = [BAR_PCT_COL, ELEC_COL, FUEL_COL, STEAM_COL]
+if coverage_col_name is not None:
+    numeric_cols.append(coverage_col_name)
+
+for col in numeric_cols:
+    if col in df_filtered.columns:
+        df_filtered[col] = pd.to_numeric(df_filtered[col], errors="coerce")
+
+# --------------------------
+# Coverage calculation
 # --------------------------
 if coverage_col_name is not None and coverage_col_name in df_filtered.columns:
-    coverage_series = pd.to_numeric(df_filtered[coverage_col_name], errors="coerce").dropna()
+    coverage_series = df_filtered[coverage_col_name].dropna()
 
     if not coverage_series.empty:
         total_coverage = coverage_series.max()
-        st.markdown(
-            f'<div class="coverage-label">Total Sector Coverage of {selected_naics1}: {total_coverage:.2%}</div>',
-            unsafe_allow_html=True,
-        )
+        coverage_text = f"Total Sector Coverage of {selected_naics1}: {total_coverage:.2%}"
     else:
-        st.markdown(
-            f'<div class="coverage-label">Total Sector Coverage of {selected_naics1}: N/A</div>',
-            unsafe_allow_html=True,
-        )
+        coverage_text = f"Total Sector Coverage of {selected_naics1}: N/A"
+
+    st.markdown(
+        f'<div class="coverage-label">{coverage_text}</div>',
+        unsafe_allow_html=True,
+    )
 else:
     st.markdown(
         f'<div class="coverage-label">Total Sector Coverage of {selected_naics1}: N/A</div>',
         unsafe_allow_html=True,
     )
+
+# --------------------------
+# Summary metrics
+# --------------------------
+total_energy_pct = pd.to_numeric(df_filtered[BAR_PCT_COL], errors="coerce").fillna(0).sum()
+
+total_electricity = (
+    pd.to_numeric(df_filtered[ELEC_COL], errors="coerce").fillna(0).sum()
+    if ELEC_COL in df_filtered.columns else 0
+)
+total_fuels = (
+    pd.to_numeric(df_filtered[FUEL_COL], errors="coerce").fillna(0).sum()
+    if FUEL_COL in df_filtered.columns else 0
+)
+total_steam = (
+    pd.to_numeric(df_filtered[STEAM_COL], errors="coerce").fillna(0).sum()
+    if STEAM_COL in df_filtered.columns else 0
+)
+
+st.markdown(
+    f"""
+    <div class="metric-row">
+        <div class="metric-box">
+            <div class="metric-label">Rows in fact sheet</div>
+            <div class="metric-value">{len(df_filtered):,}</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-label">Summed energy share</div>
+            <div class="metric-value">{total_energy_pct:.2%}</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-label">Electricity demand</div>
+            <div class="metric-value">{total_electricity:,.2f} PJ</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-label">Fuel demand</div>
+            <div class="metric-value">{total_fuels:,.2f} PJ</div>
+        </div>
+        <div class="metric-box">
+            <div class="metric-label">Steam / CHP demand</div>
+            <div class="metric-value">{total_steam:,.2f} PJ</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 # --------------------------
 # Prepare bar chart data
@@ -198,50 +281,31 @@ bar_df = (
     )
 )
 
-# Remove zero-only rows if desired
-bar_df = bar_df[bar_df["Percent Energy"].notna()]
+# Remove exact zeros for cleaner chart
+bar_df = bar_df[bar_df["Percent Energy"].fillna(0) != 0]
 
 # --------------------------
-# Dynamic donut chart data
+# Prepare donut chart data from real workbook columns
 # --------------------------
-for col in [ELEC_COL, FUEL_COL, STEAM_COL]:
-    if col not in df_filtered.columns:
-        df_filtered[col] = 0
-
-energy_breakdown = {
-    "Annual Fuels": pd.to_numeric(df_filtered[FUEL_COL], errors="coerce").fillna(0).sum(),
-    "Annual Steam": pd.to_numeric(df_filtered[STEAM_COL], errors="coerce").fillna(0).sum(),
-    "Annual Electricity": pd.to_numeric(df_filtered[ELEC_COL], errors="coerce").fillna(0).sum(),
-}
-
 breakdown_df = pd.DataFrame(
     {
-        "Type": list(energy_breakdown.keys()),
-        "Value": list(energy_breakdown.values()),
+        "Type": ["Annual Fuels", "Annual Steam / CHP", "Annual Electricity"],
+        "Value": [total_fuels, total_steam, total_electricity],
     }
 )
 
-breakdown_df = breakdown_df[breakdown_df["Value"] > 0]
-
-# fallback in case all values are zero/missing
-if breakdown_df.empty:
-    breakdown_df = pd.DataFrame(
-        {
-            "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
-            "Value": [0, 0, 0],
-        }
-    )
+breakdown_df = breakdown_df[breakdown_df["Value"].fillna(0) > 0]
 
 # --------------------------
 # Layout
 # --------------------------
-left_col, right_col = st.columns([1.05, 1.15])
+left_col, right_col = st.columns([1.0, 1.2])
 
 with left_col:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Total Annual Energy Breakdown")
 
-    if breakdown_df["Value"].sum() > 0:
+    if not breakdown_df.empty and breakdown_df["Value"].sum() > 0:
         fig_donut = px.pie(
             breakdown_df,
             names="Type",
@@ -249,7 +313,7 @@ with left_col:
             hole=0.65,
         )
         fig_donut.update_traces(
-            textinfo="percent",
+            textinfo="percent+label",
             textposition="outside",
             marker=dict(colors=["#f7901d", "#3b4f9b", "#a3d5a4"]),
         )
@@ -259,7 +323,7 @@ with left_col:
         )
         st.plotly_chart(fig_donut, use_container_width=True)
     else:
-        st.write("No annual energy breakdown data available for this NAICS Level 1 selection.")
+        st.write("No annual electricity, fuels, or steam/CHP demand data available for this NAICS Level 1 selection.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -287,6 +351,7 @@ with right_col:
             yaxis_title="",
             xaxis_tickformat=".0%",
             margin=dict(t=20, b=20, l=80, r=60),
+            height=max(400, 28 * len(bar_df_sorted)),
         )
 
         st.plotly_chart(fig_bar, use_container_width=True)
@@ -296,9 +361,30 @@ with right_col:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --------------------------
+# Optional top unit operations table
+# --------------------------
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.subheader(f"Top Unit Operations – {selected_naics1}")
+
+if not bar_df.empty:
+    top_ops = (
+        bar_df.sort_values("Percent Energy", ascending=False)
+        .reset_index(drop=True)
+        .copy()
+    )
+    top_ops["Percent Energy"] = top_ops["Percent Energy"].map(
+        lambda x: f"{x:.2%}" if pd.notnull(x) else ""
+    )
+    st.dataframe(top_ops, use_container_width=True, hide_index=True)
+else:
+    st.write("No unit-operation summary available.")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# --------------------------
 # Fact sheet table
 # --------------------------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Fact Sheet – {selected_naics1}")
-st.dataframe(df_filtered, use_container_width=True)
+st.dataframe(df_filtered, use_container_width=True, hide_index=True)
 st.markdown("</div>", unsafe_allow_html=True)
