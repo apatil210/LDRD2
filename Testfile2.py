@@ -25,10 +25,10 @@ PAPER_BG = "rgba(0,0,0,0)"
 PLOT_BG = "rgba(0,0,0,0)"
 BAR_COLOR = "#0B6E74"
 
-SEC_COLOR_MAP = {
-    "SEC Electricity": "#54A24B",
-    "SEC Fuels": "#F58518",
-    "SEC Steam": "#4C78A8",
+ENERGY_COLOR_MAP = {
+    "Annual Electricity": "#54A24B",
+    "Annual Fuels": "#F58518",
+    "Annual Steam": "#4C78A8",
 }
 
 # ----------------------------
@@ -41,9 +41,9 @@ COL_PERCENT_ENERGY = "Percent Annual energy demand in 2022"
 COL_ANNUAL_PRODUCTION = "Annual production in 2022\n(based on FU)"
 COL_ANNUAL_ENERGY = "Annual energy demand in 2022"
 
-COL_SEC_ELECTRICITY = "SEC\nelectricity"
-COL_SEC_FUELS = "SEC\nfuels"
-COL_SEC_STEAM = "SEC\nfuels or electricity for steam or steam from CHP"
+COL_ANNUAL_ELECTRICITY = "Annual electricity demand in 2022"
+COL_ANNUAL_FUELS = "Annual fuels demand in 2022"
+COL_ANNUAL_STEAM = "Annual fuels or electricity for steam or steam from CHP demand in 2022"
 
 COL_EFFICIENCY = "Efficiency"
 COL_PROCESS_TEMP = "Process temperature"
@@ -188,9 +188,11 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     l3_col = find_matching_column(df, COL_L3)
     annual_prod_col = find_matching_column(df, COL_ANNUAL_PRODUCTION)
     annual_energy_col = find_matching_column(df, COL_ANNUAL_ENERGY)
-    sec_elec_col = find_matching_column(df, COL_SEC_ELECTRICITY)
-    sec_fuels_col = find_matching_column(df, COL_SEC_FUELS)
-    sec_steam_col = find_matching_column(df, COL_SEC_STEAM)
+
+    annual_elec_col = find_matching_column(df, COL_ANNUAL_ELECTRICITY)
+    annual_fuels_col = find_matching_column(df, COL_ANNUAL_FUELS)
+    annual_steam_col = find_matching_column(df, COL_ANNUAL_STEAM)
+
     efficiency_col = find_matching_column(df, COL_EFFICIENCY)
     process_temp_col = find_matching_column(df, COL_PROCESS_TEMP)
     inlet_temp_col = find_matching_column(df, COL_INLET_TEMP)
@@ -212,9 +214,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     numeric_cols = [
         annual_prod_col,
         annual_energy_col,
-        sec_elec_col,
-        sec_fuels_col,
-        sec_steam_col,
+        annual_elec_col,
+        annual_fuels_col,
+        annual_steam_col,
     ]
 
     for col in numeric_cols:
@@ -230,16 +232,16 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     annual_production = production_values[0] if len(production_values) > 0 else 0
     annual_energy = selected_df[annual_energy_col].fillna(0).sum()
 
-    sec_electricity = selected_df[sec_elec_col].fillna(0).sum()
-    sec_fuels = selected_df[sec_fuels_col].fillna(0).sum()
-    sec_steam = selected_df[sec_steam_col].fillna(0).sum()
+    annual_electricity = selected_df[annual_elec_col].fillna(0).sum()
+    annual_fuels = selected_df[annual_fuels_col].fillna(0).sum()
+    annual_steam = selected_df[annual_steam_col].fillna(0).sum()
 
     detail_df = selected_df[
         [
             l3_col,
-            sec_elec_col,
-            sec_fuels_col,
-            sec_steam_col,
+            annual_elec_col,
+            annual_fuels_col,
+            annual_steam_col,
             efficiency_col,
             process_temp_col,
             inlet_temp_col,
@@ -251,9 +253,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
         ]
     ].rename(columns={
         l3_col: "Category",
-        sec_elec_col: "SEC Electricity (GJ/t)",
-        sec_fuels_col: "SEC Fuels (GJ/t)",
-        sec_steam_col: "SEC Steam (GJ/t)",
+        annual_elec_col: "Annual Electricity (PJ/yr)",
+        annual_fuels_col: "Annual Fuels (PJ/yr)",
+        annual_steam_col: "Annual Steam (PJ/yr)",
         efficiency_col: "Efficiency (%)",
         process_temp_col: "Process temperature (°C)",
         inlet_temp_col: "Inlet temperature (°C)",
@@ -267,9 +269,9 @@ def build_fact_sheet(df: pd.DataFrame, selected_l2: str):
     return {
         "Annual Production": annual_production,
         "Annual Energy": annual_energy,
-        "SEC Electricity": sec_electricity,
-        "SEC Fuels": sec_fuels,
-        "SEC Steam": sec_steam,
+        "Annual Electricity": annual_electricity,
+        "Annual Fuels": annual_fuels,
+        "Annual Steam": annual_steam,
         "Rows": len(selected_df),
         "Details": detail_df,
     }
@@ -324,13 +326,13 @@ def build_bar_chart(df: pd.DataFrame):
     return fig
 
 
-def build_sec_donut(fact_sheet: dict):
+def build_annual_energy_donut(fact_sheet: dict):
     donut_df = pd.DataFrame({
-        "SEC Type": ["SEC Electricity", "SEC Fuels", "SEC Steam"],
+        "Energy Type": ["Annual Electricity", "Annual Fuels", "Annual Steam"],
         "Value": [
-            fact_sheet["SEC Electricity"],
-            fact_sheet["SEC Fuels"],
-            fact_sheet["SEC Steam"]
+            fact_sheet["Annual Electricity"],
+            fact_sheet["Annual Fuels"],
+            fact_sheet["Annual Steam"]
         ]
     })
 
@@ -341,21 +343,21 @@ def build_sec_donut(fact_sheet: dict):
 
     fig = px.pie(
         donut_df,
-        names="SEC Type",
+        names="Energy Type",
         values="Value",
         hole=0.62,
-        color="SEC Type",
-        color_discrete_map=SEC_COLOR_MAP
+        color="Energy Type",
+        color_discrete_map=ENERGY_COLOR_MAP
     )
 
-    total_sec = donut_df["Value"].sum()
+    total_energy = donut_df["Value"].sum()
 
     fig.update_traces(
         textposition="outside",
         texttemplate="%{label}<br>%{percent}",
         hovertemplate=(
             "<b>%{label}</b><br>"
-            "Value: %{value:.3f}<br>"
+            "Value: %{value:.3f} PJ/yr<br>"
             "Share: %{percent}<extra></extra>"
         ),
         marker=dict(line=dict(color="#FFFFFF", width=2))
@@ -374,7 +376,7 @@ def build_sec_donut(fact_sheet: dict):
         ),
         annotations=[
             dict(
-                text=f"<b>Total SEC (GJ/t)</b><br>{total_sec:.2f}",
+                text=f"<b>Total Annual Energy (PJ/yr)</b><br>{total_energy:.2f}",
                 x=0.5,
                 y=0.5,
                 showarrow=False,
@@ -416,8 +418,8 @@ try:
                 f"{fact_sheet['Annual Energy']:.2f}"
             )
 
-            st.subheader("Specific Energy Consumption (SEC)")
-            donut_fig = build_sec_donut(fact_sheet)
+            st.subheader("Annual Energy Breakdown")
+            donut_fig = build_annual_energy_donut(fact_sheet)
 
             if donut_fig is not None:
                 st.plotly_chart(
@@ -427,7 +429,7 @@ try:
                     config={"displayModeBar": False}
                 )
             else:
-                st.info("No positive SEC values available for the selected category.")
+                st.info("No positive annual energy values available for the selected category.")
 
             st.dataframe(
                 fact_sheet["Details"],
