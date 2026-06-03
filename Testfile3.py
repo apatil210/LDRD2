@@ -13,20 +13,20 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     url = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
+    # Use the SECOND row (index 1) as header, because row 0 is the group headers
     df = pd.read_excel(
         url,
-        sheet_name="Process-level data"  # this is the sheet that has NAICS Level 1
+        sheet_name="Process-level data",
+        header=1
     )
-    # Make sure all column names are strings
-    df.columns = df.columns.map(str)
+    df.columns = df.columns.map(str).str.strip()
     return df
 
 df = load_data()
 
-# Uncomment this line once to see what Streamlit is actually reading:
+# Uncomment once to inspect:
 # st.write(df.columns.tolist())
 
-# Use the exact header name from the file
 NAICS_COL = "NAICS Level 1"
 
 if NAICS_COL not in df.columns:
@@ -122,17 +122,11 @@ if BAR_UNIT_COL in df_filtered.columns and BAR_PCT_COL in df_filtered.columns:
 else:
     bar_df = pd.DataFrame(columns=["Unit Operation", "Percent Energy"])
 
-# Simple placeholder donut data
 breakdown_df = pd.DataFrame(
-    {
-        "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
-        "Value": [0.826, 0.169, 0.0051],
-    }
+    {"Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
+     "Value": [0.826, 0.169, 0.0051]}
 )
 
-# --------------------------
-# Layout: donut + bar
-# --------------------------
 left_col, right_col = st.columns([1.05, 1.15])
 
 with left_col:
@@ -158,7 +152,7 @@ with left_col:
     st.markdown("</div>", unsafe_allow_html=True)
 
 with right_col:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_allow_html=True)
     st.subheader("Percent Annual Energy by Unit Operation")
 
     if not bar_df.empty:
@@ -187,9 +181,6 @@ with right_col:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --------------------------
-# Bottom table – fact sheet
-# --------------------------
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Fact Sheet – {selected_naics1}")
 st.dataframe(df_filtered, use_container_width=True)
