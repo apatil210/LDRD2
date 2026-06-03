@@ -162,7 +162,7 @@ coverage = coverage_values.max() if not coverage_values.empty else None
 coverage_text = f"{coverage:.2%}" if coverage is not None else "N/A"
 
 st.markdown(
-    f'<div class="coverage-label">Total Sector Coverage of {selected_naics1}: {coverage_text}</div>',
+    f'<div class="coverage-label">Total Sector Coverage of {selected_naics}: {coverage_text}</div>',
     unsafe_allow_html=True,
 )
 
