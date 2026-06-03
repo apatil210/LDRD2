@@ -268,7 +268,7 @@ with right_col:
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown('<div class="card">', unsafe_allow_html=True)
-st.subheader("Annual Energy by Industrial Process")
+st.subheader(f"Annual Energy Classification by Industrial Process within {selected_naics}")
 
 if not process_df.empty:
     process_df = process_df.sort_values("Annual Energy", ascending=True)
