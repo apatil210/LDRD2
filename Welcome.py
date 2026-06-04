@@ -379,6 +379,13 @@ st.markdown(
         color: var(--lbl-dark-gray);
     }
 
+    .funding-copy {
+        font: 500 1.02rem/1.9 'Libre Franklin', sans-serif;
+        color: #29414b;
+        text-align: center;
+        margin: 0.35rem 0 0 0;
+    }
+
     div[data-testid="column"] {
         display: flex;
     }
@@ -576,5 +583,19 @@ st.markdown(
         <div class="footer-note">This interface is designed as a project landing page and resource gateway for Berkeley Lab-hosted industrial energy modeling work.</div>
     </section>
     ''',
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <section class="section">
+        <h2 class="section-title">Funding Acknowledgement</h2>
+        <p class="funding-copy">
+            Laboratory Directed Research &amp; Development (LDRD) Program<br>
+            Lawrence Berkeley National Laboratory (LBNL)<br>
+            (FY 2025-26)
+        </p>
+    </section>
+    """,
     unsafe_allow_html=True,
 )
