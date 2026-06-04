@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from pathlib import Path
 
-st.set_page_config(page_title="US Manufacturing Energy Classification: Unit Operations", layout="wide")
+st.set_page_config(
+    page_title="US Manufacturing Energy Classification: Unit Operations",
+    layout="wide"
+)
 
 SHEET_NAME = "Process-level data"
 GITHUB_URL = "https://github.com/apatil210/LDRD2/raw/main/Modified%20Data%20for%20NAICS.xlsx"
@@ -19,6 +21,20 @@ EXPECTED = {
     "annual_electricity": "Annual electricity demand in 2022",
     "annual_fuels": "Annual fuels demand in 2022",
     "annual_steam": "Annual fuels or electricity for steam or steam from CHP demand in 2022",
+}
+
+COLORS = {
+    "bg": "#f8fafc",
+    "card": "#ffffff",
+    "text": "#0f172a",
+    "muted": "#64748b",
+    "border": "#e5e7eb",
+    "fuels": "#f7901d",
+    "steam": "#3b82f6",
+    "electricity": "#0f766e",
+    "teal": "#0f766e",
+    "purple": "#7c3aed",
+    "slate": px.colors.sequential.Tealgrn,
 }
 
 def norm(x):
@@ -85,21 +101,20 @@ def num(series):
 def fmt_pj(x):
     return f"{x:,.2f} PJ"
 
-def group_small_slices(df, label_col, value_col, top_n=8):
+def top_n_with_other(df, label_col, value_col, n=12):
     df = df.copy()
-    df = df[df[value_col] > 0].sort_values(value_col, ascending=False)
-
-    if len(df) <= top_n:
+    df = df[df[value_col] > 0].sort_values(value_col, ascending=False).reset_index(drop=True)
+    if len(df) <= n:
         return df
 
-    top = df.head(top_n).copy()
-    other_sum = df.iloc[top_n:][value_col].sum()
+    top = df.iloc[:n].copy()
+    other_value = df.iloc[n:][value_col].sum()
 
-    if other_sum > 0:
+    if other_value > 0:
         top = pd.concat(
             [
                 top,
-                pd.DataFrame([{label_col: "Other", value_col: other_sum}])
+                pd.DataFrame([{label_col: "Other", value_col: other_value}])
             ],
             ignore_index=True
         )
@@ -117,40 +132,42 @@ st.markdown(
         background-color: #f8fafc;
     }
     .block-container {
-        padding-top: 1.3rem;
+        padding-top: 1.2rem;
         padding-bottom: 2rem;
-        max-width: 1250px;
+        max-width: 1280px;
     }
     h1, h2, h3 {
-        color: #1e293b !important;
+        color: #0f172a !important;
+        letter-spacing: -0.02em;
     }
     .card {
         background: #ffffff;
         border: 1px solid #e5e7eb;
-        border-radius: 16px;
+        border-radius: 18px;
         padding: 18px 20px;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         margin-bottom: 1rem;
     }
     .metric-label {
-        font-size: 0.92rem;
+        font-size: 0.90rem;
         color: #64748b;
-        margin-bottom: 0.15rem;
+        margin-bottom: 0.2rem;
     }
     .metric-value {
-        font-size: 1.35rem;
+        font-size: 1.40rem;
         font-weight: 700;
         color: #0f172a;
     }
+    .subtle {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
     .coverage-label {
-        margin-top: 0.35rem;
+        margin-top: 0.25rem;
         margin-bottom: 1rem;
         font-size: 0.98rem;
         color: #0f172a;
         font-weight: 600;
-    }
-    .dataframe tbody tr th {
-        display: none;
     }
     </style>
     """,
@@ -158,7 +175,7 @@ st.markdown(
 )
 
 st.markdown("<h1>US Manufacturing Energy Classification: NAICS</h1>", unsafe_allow_html=True)
-st.write("Select a NAICS Level (3-digit code) sector to generate an energy fact sheet.")
+st.write("Select a NAICS Level (3-digit code) sector to explore annual energy composition and process demand.")
 
 if missing:
     st.error("Missing required columns: " + ", ".join(missing))
@@ -208,7 +225,7 @@ for col, label, value in [
 
 breakdown_df = pd.DataFrame(
     {
-        "Label": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
+        "Type": ["Annual Fuels", "Annual Steam", "Annual Electricity"],
         "Value": [total_fuels, total_steam, total_electricity],
     }
 )
@@ -220,9 +237,9 @@ naics_df = (
     naics_df.dropna(subset=[naics_l2_col, annual_energy_col])
     .groupby(naics_l2_col, as_index=False)[annual_energy_col]
     .sum()
-    .rename(columns={naics_l2_col: "Label", annual_energy_col: "Value"})
+    .rename(columns={naics_l2_col: "NAICS Level 2", annual_energy_col: "Annual Energy"})
 )
-naics_df = group_small_slices(naics_df, "Label", "Value", top_n=8)
+naics_df = naics_df[naics_df["Annual Energy"] > 0].copy()
 
 process_df = df_filtered[[industrial_process_col, annual_energy_col]].copy()
 process_df[annual_energy_col] = pd.to_numeric(process_df[annual_energy_col], errors="coerce")
@@ -230,106 +247,142 @@ process_df = (
     process_df.dropna(subset=[industrial_process_col, annual_energy_col])
     .groupby(industrial_process_col, as_index=False)[annual_energy_col]
     .sum()
-    .rename(columns={industrial_process_col: "Label", annual_energy_col: "Value"})
+    .rename(columns={industrial_process_col: "Industrial process", annual_energy_col: "Annual Energy"})
 )
-process_df = group_small_slices(process_df, "Label", "Value", top_n=10)
+process_df = process_df[process_df["Annual Energy"] > 0].copy()
+
+process_top = top_n_with_other(process_df, "Industrial process", "Annual Energy", n=12)
+process_top = process_top.sort_values("Annual Energy", ascending=True)
+
+top_left, top_right = st.columns([0.95, 1.45])
+
+with top_left:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Energy mix")
+
+    if not breakdown_df.empty:
+        fig_donut = px.pie(
+            breakdown_df,
+            names="Type",
+            values="Value",
+            hole=0.68,
+            color="Type",
+            color_discrete_map={
+                "Annual Fuels": COLORS["fuels"],
+                "Annual Steam": COLORS["steam"],
+                "Annual Electricity": COLORS["electricity"],
+            },
+        )
+        fig_donut.update_traces(
+            sort=False,
+            textposition="inside",
+            textinfo="percent",
+            hovertemplate="<b>%{label}</b><br>%{value:.2f} PJ<br>%{percent}<extra></extra>",
+            marker=dict(line=dict(color="white", width=2)),
+        )
+        fig_donut.update_layout(
+            height=420,
+            margin=dict(t=10, b=10, l=10, r=10),
+            showlegend=True,
+            legend=dict(orientation="h", y=-0.12, x=0.5, xanchor="center"),
+            annotations=[
+                dict(
+                    text=f"<b>{total_energy:,.1f} PJ</b><br>Total",
+                    x=0.5,
+                    y=0.5,
+                    showarrow=False,
+                    font=dict(size=18, color=COLORS["text"]),
+                )
+            ],
+        )
+        st.plotly_chart(fig_donut, use_container_width=True)
+    else:
+        st.info("No annual energy breakdown is available for this selection.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with top_right:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Energy by NAICS Level 2")
+
+    if not naics_df.empty:
+        fig_tree = px.treemap(
+            naics_df,
+            path=["NAICS Level 2"],
+            values="Annual Energy",
+            color="Annual Energy",
+            color_continuous_scale=[
+                [0.0, "#dff3f0"],
+                [0.35, "#9ed9d2"],
+                [0.7, "#3aa99f"],
+                [1.0, "#0f766e"],
+            ],
+        )
+        fig_tree.update_traces(
+            textinfo="label+value+percent root",
+            texttemplate="<b>%{label}</b><br>%{value:.1f} PJ<br>%{percentRoot:.1%}",
+            marker=dict(line=dict(color="white", width=2)),
+            hovertemplate="<b>%{label}</b><br>%{value:.2f} PJ<br>%{percentRoot:.2%} of selected NAICS<extra></extra>",
+        )
+        fig_tree.update_layout(
+            height=420,
+            margin=dict(t=10, b=10, l=10, r=10),
+            coloraxis_showscale=False,
+        )
+        st.plotly_chart(fig_tree, use_container_width=True)
+    else:
+        st.info("No NAICS Level 2 annual energy data is available for this selection.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown('<div class="card">', unsafe_allow_html=True)
-st.subheader(f"Multi-layer Donut Chart for {selected_naics}")
+st.subheader("Top industrial processes by annual energy")
 
-if not breakdown_df.empty and not naics_df.empty and not process_df.empty:
-    fig = go.Figure()
-
-    fig.add_trace(
-        go.Pie(
-            labels=breakdown_df["Label"],
-            values=breakdown_df["Value"],
-            name="Energy Type",
-            hole=0.25,
-            sort=False,
-            direction="clockwise",
-            domain={"x": [0.22, 0.78], "y": [0.22, 0.78]},
-            textinfo="label+percent",
-            textposition="inside",
-            marker=dict(
-                colors=["#f7901d", "#3b82f6", "#0f766e"],
-                line=dict(color="white", width=2),
-            ),
-            showlegend=True,
-        )
-    )
-
-    fig.add_trace(
-        go.Pie(
-            labels=naics_df["Label"],
-            values=naics_df["Value"],
-            name="NAICS Level 2",
-            hole=0.55,
-            sort=False,
-            direction="clockwise",
-            domain={"x": [0.12, 0.88], "y": [0.12, 0.88]},
-            textinfo="label+percent",
-            textposition="inside",
-            marker=dict(
-                colors=px.colors.qualitative.Set3[:len(naics_df)],
-                line=dict(color="white", width=1.5),
-            ),
-            showlegend=True,
-        )
-    )
-
-    fig.add_trace(
-        go.Pie(
-            labels=process_df["Label"],
-            values=process_df["Value"],
-            name="Industrial Process",
-            hole=0.78,
-            sort=False,
-            direction="clockwise",
-            domain={"x": [0.02, 0.98], "y": [0.02, 0.98]},
-            textinfo="none",
-            hovertemplate="<b>%{label}</b><br>%{value:.2f} PJ<br>%{percent}<extra>Industrial Process</extra>",
-            marker=dict(
-                colors=(px.colors.qualitative.Pastel + px.colors.qualitative.Safe)[:len(process_df)],
-                line=dict(color="white", width=1),
-            ),
-            showlegend=True,
-        )
-    )
-
-    fig.update_layout(
-        height=850,
-        margin=dict(t=40, b=20, l=20, r=20),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
-        annotations=[
-            dict(
-                text=f"<b>{selected_naics}</b><br>Total Energy<br>{total_energy:,.2f} PJ",
-                x=0.5,
-                y=0.5,
-                showarrow=False,
-                font=dict(size=16, color="#0f172a"),
-                align="center",
-            )
+if not process_top.empty:
+    fig_bar = px.bar(
+        process_top,
+        x="Annual Energy",
+        y="Industrial process",
+        orientation="h",
+        text="Annual Energy",
+        color="Annual Energy",
+        color_continuous_scale=[
+            [0.0, "#ede9fe"],
+            [0.5, "#a78bfa"],
+            [1.0, "#7c3aed"],
         ],
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.12,
-            xanchor="center",
-            x=0.5,
-        ),
     )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-    st.caption("Inner ring: energy type • Middle ring: NAICS Level 2 • Outer ring: industrial process")
+    fig_bar.update_traces(
+        texttemplate="%{text:.1f} PJ",
+        textposition="outside",
+        cliponaxis=False,
+        hovertemplate="<b>%{y}</b><br>%{x:.2f} PJ<extra></extra>",
+    )
+    fig_bar.update_layout(
+        height=560,
+        margin=dict(t=10, b=20, l=140, r=40),
+        xaxis_title="Annual Energy Demand in 2022 (PJ)",
+        yaxis_title="",
+        coloraxis_showscale=False,
+    )
+    st.plotly_chart(fig_bar, use_container_width=True)
 else:
-    st.info("Not enough data is available to render the multi-layer donut chart.")
+    st.info("No industrial process annual energy data is available for this selection.")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown('<div class="card">', unsafe_allow_html=True)
-# st.subheader(f"Fact Sheet – {selected_naics}")
-# st.dataframe(df_filtered, use_container_width=True, height=500)
-st.markdown("</div>", unsafe_allow_html=True)
+with st.expander("Optional view: hierarchical radial chart"):
+    if not naics_df.empty:
+        fig_sun = px.sunburst(
+            naics_df,
+            path=["NAICS Level 2"],
+            values="Annual Energy",
+            color="Annual Energy",
+            color_continuous_scale="Tealgrn",
+        )
+        fig_sun.update_layout(
+            height=500,
+            margin=dict(t=10, b=10, l=10, r=10),
+            coloraxis_showscale=False,
+        )
+        st.plotly_chart(fig_sun, use_container_width=True)
+    else:
+        st.info("No hierarchical radial data is available for this selection.")
