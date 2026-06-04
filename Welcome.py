@@ -37,7 +37,6 @@ st.markdown(
     :root {
         --lbl-blue: #00313c;
         --lbl-teal: #007681;
-        --lbl-light-gray: #b1b3b3;
         --lbl-dark-gray: #63666a;
         --lbl-orange: #d57800;
         --bg: #f7f9f9;
@@ -335,23 +334,18 @@ st.markdown(
     }
 
     .person-photo-wrap {
-        background: linear-gradient(180deg, #ecf3f3 0%, #e3ecee 100%);
-        padding: 1rem;
+        background: #e7eff1;
+        padding: 0;
     }
 
     .person-photo-frame {
         width: 100%;
         height: 285px;
-        overflow: hidden;
-        background: #dfe8ea;
-        border: 1px solid rgba(0, 49, 60, 0.10);
-    }
-
-    .person-photo {
-        width: 100%;
-        height: 100%;
-        display: block;
-        object-fit: fill;
+        border-bottom: 1px solid rgba(0, 49, 60, 0.10);
+        background-color: #dfe8ea;
+        background-repeat: no-repeat;
+        background-position: center center;
+        background-size: 100% 100%;
     }
 
     .person-body {
@@ -562,9 +556,7 @@ cards_html = "".join(
     f'''
     <article class="person-card">
         <div class="person-photo-wrap">
-            <div class="person-photo-frame">
-                <img class="person-photo" src="{c["photo"]}" alt="Portrait of {c["name"]}">
-            </div>
+            <div class="person-photo-frame" role="img" aria-label="Portrait of {c["name"]}" style="background-image: url('{c["photo"]}');"></div>
         </div>
         <div class="person-body">
             <h3 class="person-name">{c["name"]}</h3>
