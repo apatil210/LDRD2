@@ -10,7 +10,7 @@ contributors = [
     {
         "name": "Akash Patil",
         "title": "Postdoctoral Researcher · Energy Analysis Division",
-        "photo": "https://raw.githubusercontent.com/apatil210/LDRD2/main/Akash_photo.jpg",
+        "photo": "https://github.com/apatil210/LDRD2/blob/main/Akash.JPG",
     },
     {
         "name": "M. Jibran S. Zuberi",
