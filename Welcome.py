@@ -452,7 +452,7 @@ st.markdown(
 st.markdown(
     """
     <section class="section">
-        <h2 class="section-title">Project Resources</h2>
+        <h2 class="section-title">Data Resources</h2>
         <p class="resource-intro">Access the core datasets and coverage views that support the analytical framework.</p>
     </section>
     """,
