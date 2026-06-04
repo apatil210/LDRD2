@@ -13,7 +13,7 @@ contributors = [
         "photo": "https://raw.githubusercontent.com/apatil210/LDRD2/main/Akashpic2.jpg",
     },
     {
-        "name": "M. Jibran S. Zuberi",
+        "name": "Jibran Zuberi",
         "title": "Energy/Environmental Policy Research Scientist/Engineer, Energy Analysis Division",
         "photo": "https://raw.githubusercontent.com/apatil210/LDRD2/main/Jibran.jpg",
     },
