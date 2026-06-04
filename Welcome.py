@@ -455,17 +455,6 @@ st.markdown(
                     This project reframes industrial energy analysis around shared unit operations rather than isolated manufacturing sectors.
                 </p>
             </div>
-
-            <aside class="hero-panel">
-                <div class="hero-panel-label">Why it matters</div>
-                <h3>Common process steps offer a better basis for energy insight.</h3>
-                <ul class="focus-list">
-                    <li class="focus-item">Maps recurring unit operations across manufacturing subsectors.</li>
-                    <li class="focus-item">Highlights high-demand operations for technology prioritization.</li>
-                    <li class="focus-item">Supports modular process-level and facility-level modeling.</li>
-                </ul>
-            </aside>
-        </div>
     </section>
     """,
     unsafe_allow_html=True,
