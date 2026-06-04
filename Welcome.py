@@ -451,10 +451,6 @@ st.markdown(
             <div class="hero-main">
                 <div class="kicker">Research platform</div>
                 <h1 class="hero-title">Industrial Energy Modeling through Mapping Unit Operations</h1>
-                
-            </div>
-
-            
     </section>
     """,
     unsafe_allow_html=True,
