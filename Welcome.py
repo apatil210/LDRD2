@@ -422,27 +422,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    """
-    <div class="topbar">
-        <div class="brand-lockup">
-            <div class="brand-mark" aria-hidden="true">
-                <svg class="brand-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 18V6.5L9.2 4L14.4 6.5V18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M9.2 18V9.2H14.4V18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M16.8 18V8.5L20 7V18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
-            <div>
-                <div class="brand-text-top">Berkeley Lab</div>
-                <div class="brand-text-main">Industrial Energy Modeling Project</div>
-            </div>
-        </div>
-        <div class="brand-meta">Lawrence Berkeley National Laboratory<br>Energy Technologies Area</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+
 
 st.markdown(
     """
