@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-from pathlib import Path
+import plotly.express as pxF
+from pathlib import PathF
 
 st.set_page_config(page_title="US Manufacturing Energy Classification: Unit Operations", layout="wide")
 
@@ -155,7 +155,7 @@ selected_naics = st.selectbox("NAICS Level 1", naics_options, index=0)
 df_filtered = df[df[naics_l1_col].astype(str) == str(selected_naics)].copy()
 
 coverage_values = pd.to_numeric(df_filtered[coverage_col], errors="coerce").dropna()
-coverage = coverage_values.max() if not coverage_values.empty else None
+coverage = coverage_values.sum() if not coverage_values.empty else None
 coverage_text = f"{coverage:.2%}" if coverage is not None else "N/A"
 
 st.markdown(
