@@ -596,7 +596,7 @@ st.markdown(
     <section class="section">
         <h2 class="section-title">Funding Acknowledgement</h2>
         <p class="funding-copy">
-            <strong>Laboratory Directed Research &amp; Development (LDRD) Program</strong>, Lawrence Berkeley National Laboratory (LBNL), FY 2025-26.
+            <strong>Laboratory Directed Research &amp; Development (LDRD) Program (FY 2025-26)</strong>, Lawrence Berkeley National Laboratory (LBNL).
         </p>
     </section>
     """,
