@@ -42,6 +42,7 @@ st.markdown(
         --bg: #f7f9f9;
         --surface: #ffffff;
         --surface-soft: #eef4f4;
+        --surface-tint: #f4f8f8;
         --text: #0b1f27;
         --muted: #4e5f66;
         --border: rgba(0, 49, 60, 0.12);
@@ -118,117 +119,131 @@ st.markdown(
     }
 
     .hero {
-        background: linear-gradient(135deg, #ffffff 0%, #f5f9f9 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f7faf9 100%);
         border: 1px solid var(--border);
-        border-top: 5px solid var(--lbl-teal);
+        border-top: 4px solid var(--lbl-teal);
         border-radius: 0;
-        padding: 2.4rem 2.4rem 2rem 2.4rem;
+        padding: 2.5rem 2.5rem 2.2rem 2.5rem;
         box-shadow: var(--shadow-lg);
         margin-bottom: 1.5rem;
     }
 
     .hero-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.78fr);
-        gap: 2rem;
+        grid-template-columns: minmax(0, 1.55fr) minmax(290px, 0.82fr);
+        gap: 2.6rem;
         align-items: start;
     }
 
     .kicker {
         display: inline-block;
-        font: 700 0.82rem/1 'Libre Franklin', sans-serif;
+        font: 700 0.78rem/1 'Libre Franklin', sans-serif;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.11em;
         color: var(--lbl-teal);
         margin-bottom: 1rem;
     }
 
     .hero-title {
         font-family: 'Libre Franklin', sans-serif;
-        font-size: clamp(2.15rem, 1.55rem + 2vw, 4rem);
+        font-size: clamp(2.1rem, 1.75rem + 1.7vw, 3.45rem);
         font-weight: 800;
         line-height: 1.02;
         letter-spacing: -0.045em;
         color: var(--lbl-blue);
-        max-width: 12ch;
-        margin: 0 0 1rem 0;
+        max-width: 11ch;
+        margin: 0 0 1.1rem 0;
     }
 
     .hero-copy {
         font-family: 'Source Serif 4', serif;
-        font-size: clamp(1.05rem, 0.98rem + 0.22vw, 1.18rem);
-        line-height: 1.72;
-        color: #29414b;
-        max-width: 68ch;
-        margin: 0 0 1.35rem 0;
+        font-size: clamp(1.05rem, 0.98rem + 0.2vw, 1.15rem);
+        line-height: 1.78;
+        color: #324a53;
+        max-width: 62ch;
+        margin: 0 0 1.6rem 0;
     }
 
     .hero-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.7rem;
-        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.8rem;
+        max-width: 860px;
     }
 
     .hero-tag {
-        background: var(--surface-soft);
-        border: 1px solid rgba(0, 118, 129, 0.14);
+        background: var(--surface-tint);
+        border: 1px solid rgba(0, 118, 129, 0.10);
         color: var(--lbl-blue);
         border-radius: 0;
-        padding: 0.7rem 0.9rem;
-        min-width: 150px;
+        padding: 0.9rem 1rem;
     }
 
     .hero-tag strong {
         display: block;
-        font: 800 0.98rem/1.1 'Libre Franklin', sans-serif;
-        margin-bottom: 0.18rem;
+        font: 800 0.92rem/1.1 'Libre Franklin', sans-serif;
+        margin-bottom: 0.28rem;
+        color: var(--lbl-blue);
     }
 
     .hero-tag span {
-        font: 500 0.83rem/1.35 'Libre Franklin', sans-serif;
+        font: 500 0.83rem/1.5 'Libre Franklin', sans-serif;
         color: var(--muted);
     }
 
     .hero-panel {
-        background: var(--lbl-blue);
-        color: white;
+        background: linear-gradient(180deg, #f5f9f9 0%, #eef5f5 100%);
+        border: 1px solid rgba(0, 49, 60, 0.10);
+        color: var(--text);
         border-radius: 0;
-        padding: 1.4rem;
-        box-shadow: 0 18px 34px rgba(0, 49, 60, 0.18);
+        padding: 1.4rem 1.45rem 1.35rem 1.45rem;
+        box-shadow: var(--shadow-sm);
     }
 
     .hero-panel-label {
         font: 700 0.76rem/1 'Libre Franklin', sans-serif;
         text-transform: uppercase;
         letter-spacing: 0.09em;
-        color: rgba(255,255,255,0.7);
+        color: var(--lbl-teal);
         margin-bottom: 0.8rem;
     }
 
     .hero-panel h3 {
-        font: 800 1.4rem/1.15 'Libre Franklin', sans-serif;
-        margin: 0 0 0.75rem 0;
-        color: white;
+        font: 800 1.28rem/1.18 'Libre Franklin', sans-serif;
+        margin: 0 0 0.8rem 0;
+        color: var(--lbl-blue);
+        letter-spacing: -0.02em;
     }
 
     .hero-panel p {
-        font: 400 1rem/1.65 'Source Serif 4', serif;
+        font: 400 1rem/1.7 'Source Serif 4', serif;
         margin: 0 0 1rem 0;
-        color: rgba(255,255,255,0.9);
+        color: #35505a;
     }
 
     .focus-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
         display: grid;
-        gap: 0.65rem;
+        gap: 0.75rem;
     }
 
     .focus-item {
-        background: rgba(255,255,255,0.08);
-        border-left: 3px solid var(--lbl-orange);
-        border-radius: 0;
-        padding: 0.8rem 0.9rem;
-        font: 500 0.93rem/1.45 'Libre Franklin', sans-serif;
+        position: relative;
+        padding-left: 1rem;
+        font: 500 0.92rem/1.55 'Libre Franklin', sans-serif;
+        color: #29414b;
+    }
+
+    .focus-item::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.55rem;
+        width: 6px;
+        height: 6px;
+        background: var(--lbl-orange);
     }
 
     .section {
@@ -364,14 +379,6 @@ st.markdown(
         min-height: 4.5rem;
     }
 
-    .hosting-note {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(0, 49, 60, 0.10);
-        font: 700 0.92rem/1.45 'Libre Franklin', sans-serif;
-        color: var(--lbl-teal);
-    }
-
     .footer-note {
         margin-top: 1.2rem;
         font: 500 0.84rem/1.55 'Libre Franklin', sans-serif;
@@ -397,12 +404,17 @@ st.markdown(
     @media (max-width: 1100px) {
         .hero-grid {
             grid-template-columns: 1fr;
+            gap: 1.5rem;
         }
         .team-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .hero-title {
-            max-width: none;
+            max-width: 14ch;
+        }
+        .hero-tags {
+            grid-template-columns: 1fr;
+            max-width: 100%;
         }
     }
 
@@ -426,14 +438,12 @@ st.markdown(
         .team-grid {
             grid-template-columns: 1fr;
         }
-        .hero-tags {
-            flex-direction: column;
-        }
-        .hero-tag {
-            width: 100%;
-        }
         .person-photo-frame {
             height: 320px;
+        }
+        .hero-title {
+            font-size: clamp(1.9rem, 1.5rem + 3vw, 2.6rem);
+            max-width: none;
         }
     }
     </style>
@@ -469,27 +479,38 @@ st.markdown(
         <div class="hero-grid">
             <div>
                 <div class="kicker">Research platform</div>
-                <h1 class="hero-title">Industrial Energy Modeling through Mapping Unit Operation Energy Demand</h1>
+                <h1 class="hero-title">Industrial Energy Modeling through Unit Operations</h1>
                 <p class="hero-copy">
-                    This project reframes industrial energy analysis around shared unit operations rather than isolated manufacturing sectors. By organizing process evidence at the operation level, the platform supports a clearer understanding of cross-sector energy demand, stronger prioritization of technology opportunities, and a more transferable foundation for future industrial system models.
+                    This project reframes industrial energy analysis around shared unit operations rather than isolated manufacturing sectors. By organizing process evidence at the operation level, the platform supports clearer insight into cross-sector energy demand, stronger prioritization of technology opportunities, and a more transferable foundation for future industrial system models.
                 </p>
+
                 <div class="hero-tags">
-                    <div class="hero-tag"><strong>Scope</strong><span>Initial process mapping covers nearly two-thirds of U.S. manufacturing.</span></div>
-                    <div class="hero-tag"><strong>Method</strong><span>Industrial processes are disaggregated into repeatable unit operations.</span></div>
-                    <div class="hero-tag"><strong>Use case</strong><span>Supports technology targeting, modeling, and design optimization.</span></div>
+                    <div class="hero-tag">
+                        <strong>Scope</strong>
+                        <span>Initial process mapping covers nearly two-thirds of U.S. manufacturing.</span>
+                    </div>
+                    <div class="hero-tag">
+                        <strong>Method</strong>
+                        <span>Industrial processes are disaggregated into repeatable unit operations.</span>
+                    </div>
+                    <div class="hero-tag">
+                        <strong>Use case</strong>
+                        <span>Supports technology targeting, modeling, and design optimization.</span>
+                    </div>
                 </div>
             </div>
+
             <aside class="hero-panel">
                 <div class="hero-panel-label">Why it matters</div>
-                <h3>Common process steps offer a better basis for energy insight.</h3>
+                <h3>Shared process steps offer a clearer basis for industrial energy insight.</h3>
                 <p>
-                    Existing industrial classifications group facilities by what they produce. This research instead studies how energy is used inside shared operations such as drying, distillation, and compression.
+                    Conventional industrial classifications describe facilities by what they produce. This research instead studies how energy is used inside recurring operations such as drying, distillation, and compression.
                 </p>
-                <div class="focus-list">
-                    <div class="focus-item">Map industrial energy demand to unit operations that recur across subsectors.</div>
-                    <div class="focus-item">Cluster and rank high-demand operations to identify the strongest opportunities for innovation.</div>
-                    <div class="focus-item">Create modular building blocks for process-level and facility-level modeling workflows.</div>
-                </div>
+                <ul class="focus-list">
+                    <li class="focus-item">Map industrial energy demand to unit operations that recur across subsectors.</li>
+                    <li class="focus-item">Rank high-demand operations to identify broad technology opportunities.</li>
+                    <li class="focus-item">Create modular building blocks for process-level and facility-level modeling.</li>
+                </ul>
             </aside>
         </div>
     </section>
