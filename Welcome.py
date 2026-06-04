@@ -450,9 +450,8 @@ st.markdown(
         <div class="hero-grid">
             <div class="hero-main">
                 <div class="kicker">Research platform</div>
-                <h1 class="hero-title">US Industrial Energy Modeling </h1>
+                <h1 class="hero-title">US Manufacturing Energy 2022 </h1>
                 
-            </div>
     </section>
     """,
     unsafe_allow_html=True,
