@@ -451,21 +451,10 @@ st.markdown(
             <div class="hero-main">
                 <div class="kicker">Research platform</div>
                 <h1 class="hero-title">Industrial Energy Modeling through Mapping Unit Operations</h1>
-                <p class="hero-copy">
-                    This project reframes industrial energy analysis around shared unit operations rather than isolated manufacturing sectors. By organizing process evidence at the operation level, the platform supports a clearer understanding of cross-sector energy demand, stronger prioritization of technology opportunities, and a more transferable foundation for future industrial system models.
-                </p>
+                
             </div>
 
-            <aside class="hero-panel">
-                <div class="hero-panel-label">Why it matters</div>
-                <h3>Common process steps offer a better basis for energy insight.</h3>
-                <ul class="focus-list">
-                    <li class="focus-item">Maps recurring unit operations across manufacturing subsectors.</li>
-                    <li class="focus-item">Highlights high-demand operations for technology prioritization.</li>
-                    <li class="focus-item">Supports modular process-level and facility-level modeling.</li>
-                </ul>
-            </aside>
-        </div>
+            
     </section>
     """,
     unsafe_allow_html=True,
