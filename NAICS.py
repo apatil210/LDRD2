@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as pxF
-from pathlib import PathF
+import plotly.express as px
+from pathlib import Path
 
 st.set_page_config(page_title="US Manufacturing Energy Classification: Unit Operations", layout="wide")
 
@@ -209,7 +209,6 @@ process_df = (
 )
 process_df = process_df[process_df["Annual Energy"] > 0].copy()
 
-# Figure 1
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Annual Energy Breakdown for {selected_naics}")
 
@@ -234,7 +233,6 @@ else:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Figure 2
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader("Annual Energy Classification by NAICS (6-digit) code")
 
@@ -247,7 +245,6 @@ else:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Figure 3
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Annual Energy Classification by Industrial Process: {selected_naics}")
 
@@ -261,6 +258,4 @@ else:
 st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown('<div class="card">', unsafe_allow_html=True)
-# st.subheader(f"Fact Sheet – {selected_naics}")
-# st.dataframe(df_filtered, use_container_width=True, height=500)
 st.markdown("</div>", unsafe_allow_html=True)
