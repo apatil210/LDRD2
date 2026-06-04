@@ -209,44 +209,45 @@ process_df = (
 )
 process_df = process_df[process_df["Annual Energy"] > 0].copy()
 
-left_col, right_col = st.columns([1.0, 1.2])
+# Figure 1
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.subheader(f"Annual Energy Breakdown for {selected_naics}")
 
-with left_col:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader(f"Annual Energy Breakdown for {selected_naics}")
+if not breakdown_df.empty:
+    fig_donut = px.pie(
+        breakdown_df,
+        names="Type",
+        values="Value",
+        hole=0.55,
+        color="Type",
+        color_discrete_map={
+            "Annual Fuels": "#f7901d",
+            "Annual Steam": "#3b82f6",
+            "Annual Electricity": "#0f766e",
+        },
+    )
+    fig_donut.update_traces(textinfo="percent+label", textposition="outside")
+    fig_donut.update_layout(showlegend=False, margin=dict(t=20, b=10, l=10, r=10))
+    st.plotly_chart(fig_donut, use_container_width=True)
+else:
+    st.info("No annual energy breakdown is available for this selection.")
 
-    if not breakdown_df.empty:
-        fig_donut = px.pie(
-            breakdown_df,
-            names="Type",
-            values="Value",
-            hole=0.55,
-            color="Type",
-            color_discrete_map={
-                "Annual Fuels": "#f7901d",
-                "Annual Steam": "#3b82f6",
-                "Annual Electricity": "#0f766e",
-            },
-        )
-        fig_donut.update_traces(textinfo="percent+label", textposition="outside")
-        fig_donut.update_layout(showlegend=False, margin=dict(t=20, b=10, l=10, r=10))
-        st.plotly_chart(fig_donut, use_container_width=True)
-    else:
-        st.info("No annual energy breakdown is available for this selection.")
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
-with right_col:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Annual Energy Classification by NAICS (6-digit) code")
+# Figure 2
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.subheader("Annual Energy Classification by NAICS (6-digit) code")
 
-    if not bar_df.empty:
-        bar_display = bar_df.sort_values("Annual Energy", ascending=False).copy()
-        bar_display["Annual Energy"] = bar_display["Annual Energy"].map(lambda x: f"{x:,.2f} PJ")
-        st.dataframe(bar_display, use_container_width=True, hide_index=True)
-    else:
-        st.info("No NAICS Level 2 annual energy data is available for this selection.")
-    st.markdown("</div>", unsafe_allow_html=True)
+if not bar_df.empty:
+    bar_display = bar_df.sort_values("Annual Energy", ascending=False).copy()
+    bar_display["Annual Energy"] = bar_display["Annual Energy"].map(lambda x: f"{x:,.2f} PJ")
+    st.dataframe(bar_display, use_container_width=True, hide_index=True)
+else:
+    st.info("No NAICS Level 2 annual energy data is available for this selection.")
 
+st.markdown("</div>", unsafe_allow_html=True)
+
+# Figure 3
 st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Annual Energy Classification by Industrial Process: {selected_naics}")
 
