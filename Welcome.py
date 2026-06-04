@@ -450,7 +450,7 @@ st.markdown(
         <div class="hero-grid">
             <div class="hero-main">
                 <div class="kicker">Research platform</div>
-                <h1 class="hero-title">Industrial Energy Modeling through Mapping Unit Operations</h1>
+                <h1 class="hero-title">US Industrial Energy Modeling </h1>
                 <p class="hero-copy">
                     This project reframes industrial energy analysis around shared unit operations rather than isolated manufacturing sectors.
                 </p>
