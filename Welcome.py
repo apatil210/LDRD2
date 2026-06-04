@@ -48,7 +48,6 @@ st.markdown(
         --border: rgba(0, 49, 60, 0.12);
         --shadow-sm: 0 8px 24px rgba(0, 49, 60, 0.06);
         --shadow-lg: 0 22px 50px rgba(0, 49, 60, 0.10);
-        --radius: 20px;
         --max-width: 1240px;
     }
 
@@ -84,13 +83,13 @@ st.markdown(
     .brand-mark {
         width: 52px;
         height: 52px;
-        border-radius: 14px;
         background: linear-gradient(180deg, var(--lbl-blue) 0%, #0a4854 100%);
         display: flex;
         align-items: center;
         justify-content: center;
         box-shadow: var(--shadow-sm);
         flex: 0 0 52px;
+        border-radius: 0;
     }
 
     .brand-svg {
@@ -123,7 +122,7 @@ st.markdown(
         background: linear-gradient(135deg, #ffffff 0%, #f5f9f9 100%);
         border: 1px solid var(--border);
         border-top: 5px solid var(--lbl-teal);
-        border-radius: 28px;
+        border-radius: 0;
         padding: 2.4rem 2.4rem 2rem 2.4rem;
         box-shadow: var(--shadow-lg);
         margin-bottom: 1.5rem;
@@ -176,7 +175,7 @@ st.markdown(
         background: var(--surface-soft);
         border: 1px solid rgba(0, 118, 129, 0.14);
         color: var(--lbl-blue);
-        border-radius: 999px;
+        border-radius: 0;
         padding: 0.7rem 0.9rem;
         min-width: 150px;
     }
@@ -195,7 +194,7 @@ st.markdown(
     .hero-panel {
         background: var(--lbl-blue);
         color: white;
-        border-radius: 22px;
+        border-radius: 0;
         padding: 1.4rem;
         box-shadow: 0 18px 34px rgba(0, 49, 60, 0.18);
     }
@@ -228,7 +227,7 @@ st.markdown(
     .focus-item {
         background: rgba(255,255,255,0.08);
         border-left: 3px solid var(--lbl-orange);
-        border-radius: 12px;
+        border-radius: 0;
         padding: 0.8rem 0.9rem;
         font: 500 0.93rem/1.45 'Libre Franklin', sans-serif;
     }
@@ -236,7 +235,7 @@ st.markdown(
     .section {
         background: #ffffff;
         border: 1px solid var(--border);
-        border-radius: 24px;
+        border-radius: 0;
         padding: 1.8rem;
         box-shadow: var(--shadow-sm);
         margin-top: 1.3rem;
@@ -281,7 +280,7 @@ st.markdown(
         padding: 1.35rem;
         box-shadow: var(--shadow-sm);
         margin: 0.2rem 0 0.6rem 0;
-        border-radius: 18px;
+        border-radius: 0;
         transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
     }
 
@@ -327,7 +326,7 @@ st.markdown(
     .person-card {
         background: #ffffff;
         border: 1px solid rgba(0, 49, 60, 0.10);
-        border-radius: 18px;
+        border-radius: 0;
         overflow: hidden;
         box-shadow: var(--shadow-sm);
         height: 100%;
@@ -342,7 +341,7 @@ st.markdown(
         width: 100%;
         aspect-ratio: 1 / 1;
         object-fit: cover;
-        border-radius: 14px 14px 0 0;
+        border-radius: 0;
         display: block;
     }
 
@@ -409,7 +408,6 @@ st.markdown(
         .hero,
         .section {
             padding: 1.25rem;
-            border-radius: 18px;
         }
         .team-grid {
             grid-template-columns: 1fr;
