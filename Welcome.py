@@ -250,7 +250,6 @@ st.markdown(
     .section-copy {
         font: 400 1.06rem/1.78 'Source Serif 4', serif;
         color: #334952;
-        max-width: 77ch;
         margin: 0;
     }
 
@@ -502,7 +501,7 @@ st.markdown(
     """
     <section class="section">
         <h2 class="section-title">Project Statement</h2>
-        <p class="section-copy section-copy--full">
+        <p class="section-copy">
             Industry comprises thermodynamic, mechanical, and chemical transformations that are built from distinct unit operations. While the number, order, and configuration of these operations differ by subsector, many core operations recur across manufacturing systems. Despite that common structure, industrial energy demand is still rarely analyzed at the unit-operation level. This project develops a framework to disaggregate industrial processes into unit operations, quantify their energy demand profiles, and identify high-priority operations where technological advances can deliver broad system-wide benefit.
         </p>
     </section>
@@ -584,7 +583,6 @@ st.markdown(
     <section class="section">
         <h2 class="section-title">Research Team</h2>
         <div class="team-grid">{cards_html}</div>
-        
     </section>
     ''',
     unsafe_allow_html=True,
