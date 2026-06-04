@@ -571,7 +571,6 @@ st.markdown(
     f'''
     <section class="section">
         <h2 class="section-title">Research Team</h2>
-        # <p class="section-copy">The project team includes researchers and technical leaders contributing expertise in industrial systems, energy analysis, and policy-relevant modeling.</p>
         <div class="team-grid">{cards_html}</div>
         <div class="hosting-note">Hosted by Lawrence Berkeley National Laboratory.</div>
         <div class="footer-note">This interface is designed as a project landing page and resource gateway for Berkeley Lab-hosted industrial energy modeling work.</div>
