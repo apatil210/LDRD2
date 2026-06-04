@@ -380,10 +380,15 @@ st.markdown(
     }
 
     .funding-copy {
-        font: 500 1.02rem/1.9 'Libre Franklin', sans-serif;
-        color: #29414b;
-        text-align: center;
-        margin: 0.35rem 0 0 0;
+        font: 500 0.98rem/1.6 'Libre Franklin', sans-serif;
+        color: var(--lbl-dark-gray);
+        margin: 0.2rem 0 0 0;
+        letter-spacing: 0.01em;
+    }
+
+    .funding-copy strong {
+        color: var(--lbl-blue);
+        font-weight: 700;
     }
 
     div[data-testid="column"] {
@@ -591,9 +596,7 @@ st.markdown(
     <section class="section">
         <h2 class="section-title">Funding Acknowledgement</h2>
         <p class="funding-copy">
-            Laboratory Directed Research &amp; Development (LDRD) Program<br>
-            Lawrence Berkeley National Laboratory (LBNL)<br>
-            (FY 2025-26)
+            Supported by the <strong>Laboratory Directed Research &amp; Development (LDRD) Program</strong>, Lawrence Berkeley National Laboratory (LBNL), FY 2025-26.
         </p>
     </section>
     """,
