@@ -192,15 +192,15 @@ breakdown_df = pd.DataFrame(
 )
 breakdown_df = breakdown_df[breakdown_df["Value"] > 0].copy()
 
-bar_df = df_filtered[[naics_l2_col, annual_energy_col]].copy()
-bar_df[annual_energy_col] = pd.to_numeric(bar_df[annual_energy_col], errors="coerce")
-bar_df = (
-    bar_df.dropna(subset=[naics_l2_col, annual_energy_col])
+naics_pie_df = df_filtered[[naics_l2_col, annual_energy_col]].copy()
+naics_pie_df[annual_energy_col] = pd.to_numeric(naics_pie_df[annual_energy_col], errors="coerce")
+naics_pie_df = (
+    naics_pie_df.dropna(subset=[naics_l2_col, annual_energy_col])
     .groupby(naics_l2_col, as_index=False)[annual_energy_col]
     .sum()
     .rename(columns={naics_l2_col: "NAICS Level 2", annual_energy_col: "Annual Energy"})
 )
-bar_df = bar_df[bar_df["Annual Energy"] > 0].copy()
+naics_pie_df = naics_pie_df[naics_pie_df["Annual Energy"] > 0].copy()
 
 process_df = df_filtered[[industrial_process_col, annual_energy_col]].copy()
 process_df[annual_energy_col] = pd.to_numeric(process_df[annual_energy_col], errors="coerce")
@@ -231,8 +231,14 @@ with left_col:
                 "Annual Electricity": "#0f766e",
             },
         )
-        fig_donut.update_traces(textinfo="percent+label", textposition="outside")
-        fig_donut.update_layout(showlegend=False, margin=dict(t=20, b=10, l=10, r=10))
+        fig_donut.update_traces(
+            textinfo="percent+label",
+            textposition="outside"
+        )
+        fig_donut.update_layout(
+            showlegend=False,
+            margin=dict(t=20, b=10, l=10, r=10)
+        )
         st.plotly_chart(fig_donut, use_container_width=True)
     else:
         st.info("No annual energy breakdown is available for this selection.")
@@ -242,27 +248,22 @@ with right_col:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Annual Energy Classification by NAICS (6-digit) code")
 
-    if not bar_df.empty:
-        bar_df = bar_df.sort_values("Annual Energy", ascending=True)
-        fig_bar = px.bar(
-            bar_df,
-            x="Annual Energy",
-            y="NAICS Level 2",
-            orientation="h",
-            text="Annual Energy",
+    if not naics_pie_df.empty:
+        fig_naics_pie = px.pie(
+            naics_pie_df,
+            names="NAICS Level 2",
+            values="Annual Energy",
+            hole=0.45,
         )
-        fig_bar.update_traces(
-            marker_color="#006b6b",
-            texttemplate="%{text:.2f}",
-            textposition="outside",
-            cliponaxis=False,
+        fig_naics_pie.update_traces(
+            textinfo="percent+label",
+            textposition="outside"
         )
-        fig_bar.update_layout(
-            xaxis_title="Annual Energy Demand in 2022 (PJ)",
-            yaxis_title="",
-            margin=dict(t=20, b=20, l=80, r=70),
+        fig_naics_pie.update_layout(
+            showlegend=False,
+            margin=dict(t=20, b=20, l=20, r=20)
         )
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.plotly_chart(fig_naics_pie, use_container_width=True)
     else:
         st.info("No NAICS Level 2 annual energy data is available for this selection.")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -271,26 +272,21 @@ st.markdown('<div class="card">', unsafe_allow_html=True)
 st.subheader(f"Annual Energy Classification by Industrial Process: {selected_naics}")
 
 if not process_df.empty:
-    process_df = process_df.sort_values("Annual Energy", ascending=True)
-    fig_process = px.bar(
+    fig_process_pie = px.pie(
         process_df,
-        x="Annual Energy",
-        y="Industrial process",
-        orientation="h",
-        text="Annual Energy",
+        names="Industrial process",
+        values="Annual Energy",
+        hole=0.45,
     )
-    fig_process.update_traces(
-        marker_color="#8b5cf6",
-        texttemplate="%{text:.2f}",
-        textposition="outside",
-        cliponaxis=False,
+    fig_process_pie.update_traces(
+        textinfo="percent+label",
+        textposition="outside"
     )
-    fig_process.update_layout(
-        xaxis_title="Annual Energy Demand in 2022 (PJ)",
-        yaxis_title="",
-        margin=dict(t=20, b=20, l=100, r=70),
+    fig_process_pie.update_layout(
+        showlegend=False,
+        margin=dict(t=20, b=20, l=20, r=20)
     )
-    st.plotly_chart(fig_process, use_container_width=True)
+    st.plotly_chart(fig_process_pie, use_container_width=True)
 else:
     st.info("No industrial process annual energy data is available for this selection.")
 
