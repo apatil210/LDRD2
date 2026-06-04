@@ -11,21 +11,25 @@ contributors = [
         "name": "Akash Patil",
         "title": "Postdoctoral Researcher · Energy Analysis Division",
         "photo": "https://raw.githubusercontent.com/apatil210/LDRD2/main/Akash_photo.jpg",
+        "position": "center top",
     },
     {
         "name": "M. Jibran S. Zuberi",
         "title": "Energy/Environmental Policy Research Scientist/Engineer · Energy Analysis Division",
         "photo": "https://raw.githubusercontent.com/apatil210/LDRD2/main/Jibran.jpg",
+        "position": "center 22%",
     },
     {
         "name": "Prakash Rao",
         "title": "Head · Building & Industrial Applications Department",
         "photo": "https://raw.githubusercontent.com/apatil210/LDRD2/main/Prakash.jpg",
+        "position": "center 18%",
     },
     {
         "name": "Unique Karki",
         "title": "Technology Researcher II · Building & Industrial Energy Systems Division",
         "photo": "https://raw.githubusercontent.com/apatil210/LDRD2/main/Unique.jpg",
+        "position": "center 20%",
     },
 ]
 
@@ -330,19 +334,29 @@ st.markdown(
         overflow: hidden;
         box-shadow: var(--shadow-sm);
         height: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
     .person-photo-wrap {
         background: linear-gradient(180deg, #ecf3f3 0%, #e3ecee 100%);
-        padding: 1rem 1rem 0 1rem;
+        padding: 1rem;
+    }
+
+    .person-photo-frame {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        background: #dfe8ea;
+        border: 1px solid rgba(0, 49, 60, 0.10);
     }
 
     .person-photo {
         width: 100%;
-        aspect-ratio: 1 / 1;
-        object-fit: cover;
-        border-radius: 0;
+        height: 100%;
         display: block;
+        object-fit: cover;
+        object-position: center top;
     }
 
     .person-body {
@@ -550,7 +564,9 @@ cards_html = "".join(
     f'''
     <article class="person-card">
         <div class="person-photo-wrap">
-            <img class="person-photo" src="{c["photo"]}" alt="Portrait of {c["name"]}">
+            <div class="person-photo-frame">
+                <img class="person-photo" src="{c["photo"]}" alt="Portrait of {c["name"]}" style="object-position: {c["position"]};">
+            </div>
         </div>
         <div class="person-body">
             <h3 class="person-name">{c["name"]}</h3>
