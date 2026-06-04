@@ -234,7 +234,7 @@ else:
 st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown('<div class="card">', unsafe_allow_html=True)
-st.subheader("Annual Energy Classification by NAICS (6-digit) code")
+st.subheader(f"Annual Energy for NAICS (6-digit) code sectors within {selected_naics}")
 
 if not bar_df.empty:
     bar_display = bar_df.sort_values("Annual Energy", ascending=False).copy()
@@ -246,7 +246,7 @@ else:
 st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown('<div class="card">', unsafe_allow_html=True)
-st.subheader(f"Annual Energy Classification by Industrial Process: {selected_naics}")
+st.subheader(f"Annual Energy for Industrial Processes within {selected_naics}")
 
 if not process_df.empty:
     process_display = process_df.sort_values("Annual Energy", ascending=False).copy()
