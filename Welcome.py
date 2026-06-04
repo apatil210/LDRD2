@@ -533,7 +533,7 @@ st.markdown(
     <section class="section">
         <h2 class="section-title">Funding Acknowledgement</h2>
         <p class="funding-copy">
-            Laboratory Directed Research &amp; Development (LDRD) Program (FY 2025-26), Lawrence Berkeley National Laboratory (LBNL).
+            Laboratory Directed Research &amp; Development (LDRD) Program (FY 2025-26) sponsored by Lawrence Berkeley National Laboratory (LBNL)
         </p>
     </section>
     """,
