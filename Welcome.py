@@ -154,7 +154,7 @@ st.markdown(
         line-height: 0.98;
         letter-spacing: -0.05em;
         color: var(--lbl-blue);
-        max-width: 9ch;
+        max-width: none;
         margin: 0 0 1.2rem 0;
     }
 
