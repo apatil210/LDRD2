@@ -9,12 +9,12 @@ st.set_page_config(
 contributors = [
     {
         "name": "Akash Patil",
-        "title": "Postdoctoral Researcher · Energy Analysis Division",
+        "title": "Postdoctoral Researcher, Energy Analysis Division",
         "photo": "https://raw.githubusercontent.com/apatil210/LDRD2/main/Akashpic2.jpg",
     },
     {
         "name": "M. Jibran S. Zuberi",
-        "title": "Energy/Environmental Policy Research Scientist/Engineer · Energy Analysis Division",
+        "title": "Energy/Environmental Policy Research Scientist/Engineer, Energy Analysis Division",
         "photo": "https://raw.githubusercontent.com/apatil210/LDRD2/main/Jibran.jpg",
     },
     {
